@@ -17,9 +17,7 @@ let { open = $bindable(), anchor, children }: Props = $props();
     <DropdownMenu.Content
       customAnchor={anchor}
       sideOffset={6}
-      class="z-50 min-w-[200px] rounded-sm border border-border-strong bg-surface-2 p-1 shadow-float outline-none
-        data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95
-        data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+      class="naad-anim-scale z-50 min-w-[200px] rounded-sm border border-border-strong bg-surface-2 p-1 shadow-float outline-none"
     >
       {@render children()}
     </DropdownMenu.Content>

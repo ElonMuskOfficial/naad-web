@@ -28,16 +28,21 @@ let {
   onmenu,
 }: Props = $props();
 
-// A real grid, not a stack of cards: header and every row share this template, so the
-// quality/duration/album columns line up exactly the way a spreadsheet or a CD tracklist would.
-const grid = $derived(
-  ['28px', 'minmax(0,1fr)', showAlbum ? 'minmax(0,180px)' : null, '150px', '20px', '48px', '20px']
-    .filter(Boolean)
-    .join(' '),
+// A real grid, not a stack of cards: header and every row share one template, so the
+// quality/duration/album columns line up like a spreadsheet or a CD tracklist.
+//
+// The template itself changes at the sm breakpoint (not just its *contents*): on mobile the
+// like/menu/album/quality tracks don't exist at all, rather than existing at zero width, so a
+// narrow viewport never has to lay out columns it has nowhere to put — set via a real CSS media
+// query (arbitrary-property utility), not a value computed once in JS.
+const desktopGrid = $derived(
+  showAlbum
+    ? 'sm:[--track-row-grid:28px_minmax(0,1fr)_minmax(0,180px)_150px_20px_48px_20px]'
+    : 'sm:[--track-row-grid:28px_minmax(0,1fr)_150px_20px_48px_20px]',
 );
 </script>
 
-<div style:--track-row-grid={grid}>
+<div class="[--track-row-grid:28px_minmax(0,1fr)_48px] {desktopGrid}">
   <div
     class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint max-sm:hidden"
     style:grid-template-columns="var(--track-row-grid)"

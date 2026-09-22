@@ -6,8 +6,7 @@ import { toast } from '$lib/toast.svelte';
 <div class="pointer-events-none fixed inset-x-0 bottom-[calc(72px+var(--spacing)*4)] z-[60] flex flex-col items-center gap-2 px-4">
   {#each toast.items as t (t.id)}
     <div
-      class="pointer-events-auto flex items-center gap-3 rounded-sm border border-border-strong bg-surface-2 px-3.5 py-2.5 shadow-float
-        animate-in fade-in-0 slide-in-from-bottom-1"
+      class="naad-anim-toast pointer-events-auto flex items-center gap-3 rounded-sm border border-border-strong bg-surface-2 px-3.5 py-2.5 shadow-float"
       role="status"
     >
       <span class="size-[5px] shrink-0 rounded-full {t.tone === 'danger' ? 'bg-danger' : 'bg-accent'}" aria-hidden="true"></span>

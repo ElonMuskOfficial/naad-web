@@ -44,7 +44,7 @@ function toggleLike(id: string) {
 <svelte:head><title>Design kit — NAAD</title></svelte:head>
 
 <div class="min-h-screen bg-surface-0 pb-32">
-  <header class="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface-0/95 px-6 py-3 backdrop-blur-sm">
+  <header class="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface-0 px-6 py-3">
     <div>
       <p class="text-2xs uppercase tracking-wider text-ink-faint">Phase A · Review 1</p>
       <h1 class="font-display text-lg text-ink">Design kit</h1>
