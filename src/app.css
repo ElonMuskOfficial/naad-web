@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+/* Fonts are self-hosted (no Google Fonts / CDN requests). Only the weights actually used. */
+@import "@fontsource-variable/fraunces/standard.css"; /* display: album/artist/Now Playing titles */
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans-devanagari/400.css"; /* Hindi titles/lyrics, paired to match Plex Sans */
+@import "@fontsource/ibm-plex-sans-devanagari/500.css";
+@import "@fontsource/ibm-plex-sans-devanagari/600.css";
+@import "@fontsource/ibm-plex-mono/400.css"; /* the "signal" layer: timecodes, quality readouts */
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* Theme is toggled by data-theme on <html>, not prefers-color-scheme, so Settings can override it. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Semantic tokens as plain custom properties, keyed by theme below. @theme (further down) points
+ * Tailwind's generated utilities (bg-surface, text-ink, etc.) at these variables, so the *value*
+ * can flip with the theme at paint time while the utility class names stay fixed.
+ */
+:root {
+  --surface-0: #141312; /* page background: warm near-black, not blue-grey */
+  --surface-1: #1c1b19; /* sidebar, cards, player bar */
+  --surface-2: #242220; /* hover/pressed, popovers, menus */
+  --surface-3: #2c2a27; /* the highest raised layer (modals) */
+  --border: rgb(236 232 225 / 10%);
+  --border-strong: rgb(236 232 225 / 18%);
+  --ink: #ece8e1;
+  --ink-muted: rgb(236 232 225 / 60%);
+  --ink-faint: rgb(236 232 225 / 36%);
+  --accent: #ffb547; /* phosphor amber — reserved for signal, never decoration */
+  --accent-ink: #1a1210; /* text/icons sitting on top of the accent */
+  --danger: #e5484d;
+  --danger-ink: #fff5f4;
+
+  /* Ambient colour, sampled from the playing track's artwork (see lib/color/ambient.ts).
+     Defaults to the surface tones so components never need a null check. */
+  --ambient-1: var(--surface-1);
+  --ambient-2: var(--surface-0);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --surface-0: #f4f1ea;
+  --surface-1: #eae6dc;
+  --surface-2: #ded9cc;
+  --surface-3: #d3cdbd;
+  --border: rgb(26 25 23 / 12%);
+  --border-strong: rgb(26 25 23 / 22%);
+  --ink: #1a1917;
+  --ink-muted: rgb(26 25 23 / 58%);
+  --ink-faint: rgb(26 25 23 / 36%);
+  --accent-ink: #241a0c;
+  --danger-ink: #2b0505;
+  color-scheme: light;
+}
+
+/* No explicit choice yet: honour the system, same values as the attribute variants above. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --surface-0: #f4f1ea;
+    --surface-1: #eae6dc;
+    --surface-2: #ded9cc;
+    --surface-3: #d3cdbd;
+    --border: rgb(26 25 23 / 12%);
+    --border-strong: rgb(26 25 23 / 22%);
+    --ink: #1a1917;
+    --ink-muted: rgb(26 25 23 / 58%);
+    --ink-faint: rgb(26 25 23 / 36%);
+    --accent-ink: #241a0c;
+    --danger-ink: #2b0505;
+    color-scheme: light;
+  }
+}
+
+/* Motion: two durations, one curve. Respected everywhere; killed everywhere by reduced-motion. */
+:root {
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+  --ease-signal: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+@theme {
+  /* Reset Tailwind's default scales entirely — every token below is deliberate. */
+  --*: initial;
+
+  --spacing: 4px; /* 4px base grid: p-1 = 4px, p-4 = 16px, ... */
+
+  --breakpoint-sm: 40rem; /* 640px */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 64rem; /* 1024px */
+  --breakpoint-xl: 80rem; /* 1280px */
+  --breakpoint-2xl: 96rem; /* 1536px */
+
+  /* Surfaces / ink / accent, re-exposed to Tailwind as bg-surface-1, text-ink, border-border, etc. */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-ambient-1: var(--ambient-1);
+  --color-ambient-2: var(--ambient-2);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-display: "Fraunces Variable", "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Type scale (see the plan: 12/13/15/18/24/36/56/88). Display sizes default to font-display. */
+  --text-2xs: 0.75rem; /* 12px — mono captions, timecodes */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.8125rem; /* 13px — dense secondary text */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem; /* 15px — base UI text */
+  --text-sm--line-height: 1.375rem;
+  --text-md: 1.125rem; /* 18px — section headers, emphasized rows */
+  --text-md--line-height: 1.625rem;
+  --text-md--font-weight: 500;
+  --text-lg: 1.5rem; /* 24px — page titles (display) */
+  --text-lg--line-height: 1.15;
+  --text-xl: 2.25rem; /* 36px — album/artist hero title (display) */
+  --text-xl--line-height: 1.1;
+  --text-2xl: 3.5rem; /* 56px — Now Playing title (display) */
+  --text-2xl--line-height: 1.05;
+  --text-3xl: 5.5rem; /* 88px — rare full-bleed display (display) */
+  --text-3xl--line-height: 1;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.04em; /* small-caps labels: quality badges, eyebrow text */
+  --tracking-wider: 0.08em;
+
+  --leading-none: 1;
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+
+  /* Deliberately small: no rounded-2xl cards. 3px matches the plan's artwork radius exactly. */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-full: 9999px;
+
+  --shadow-none: none;
+  /* The only shadow in the system: a soft contact shadow under floating surfaces (menus, sheets). */
+  --shadow-float: 0 8px 24px -8px rgb(0 0 0 / 40%);
+
+  --ease-signal: var(--ease-signal);
+  --ease-out: var(--ease-signal);
+
+  --animate-none: none;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    background: var(--color-surface-0);
+    color-scheme: light dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-surface-0);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Tabular figures everywhere numbers appear in the signal layer, without needing a class. */
+  .font-mono,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
