@@ -113,7 +113,7 @@ function toggleLike(id: string) {
         <QualityBadge source={{ tier: 'lossless', codec: 'flac', bitDepth: 16, sampleRate: 44100 }} interactive={false} />
         <QualityBadge source={{ tier: 'high', codec: 'aac', bitrateKbps: 320 }} interactive={false} />
         <QualityBadge source={{ tier: 'standard', codec: 'opus', bitrateKbps: 160 }} interactive={false} />
-        <QualityBadge source={tracks[0]!.source!} onclick={() => toast.push('Signal path card opens here (Phase B).')} />
+        <QualityBadge source={tracks[0]!.quality!} onclick={() => toast.push('Signal path card opens here (Phase B).')} />
       </div>
     </section>
 

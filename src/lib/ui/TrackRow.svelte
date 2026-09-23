@@ -1,6 +1,7 @@
 <script lang="ts">
 import DotsThree from 'phosphor-svelte/lib/DotsThree';
 import Heart from 'phosphor-svelte/lib/Heart';
+import { trackMenu } from '$lib/context-menu.svelte';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Play } from '$lib/icons';
 import type { Track } from '$lib/types';
@@ -36,13 +37,50 @@ let {
 const artist = $derived(joinArtists(track.artists.map((a) => a.name)));
 const artwork = $derived(track.images[0]?.url ?? track.album?.images[0]?.url);
 let menuButton = $state<HTMLElement>();
+let rowElement = $state<HTMLElement>();
+let touchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function triggerMenu(anchorEl?: HTMLElement) {
+  const anchor = anchorEl ?? menuButton ?? rowElement;
+  if (!anchor) return;
+  if (onmenu) {
+    onmenu(anchor);
+  } else {
+    trackMenu.openFor(track, anchor);
+  }
+}
+
+function handleContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  triggerMenu(menuButton ?? (e.currentTarget as HTMLElement));
+}
+
+function handleTouchStart() {
+  touchTimer = setTimeout(() => {
+    triggerMenu();
+  }, 500);
+}
+
+function handleTouchEnd() {
+  if (touchTimer) {
+    clearTimeout(touchTimer);
+    touchTimer = null;
+  }
+}
 </script>
 
 <!-- One data row of a real grid table (see TrackTable's --track-row-grid), not a card. -->
 <div
-  class="group grid items-center gap-3 rounded-xs px-2 text-sm h-11 sm:h-11 max-sm:h-14 hover:bg-surface-2 data-[current]:bg-surface-1"
+  bind:this={rowElement}
+  role="row"
+  tabindex={-1}
+  class="group grid items-center gap-3 rounded-xs px-2 text-sm h-11 sm:h-11 max-sm:h-14 hover:bg-surface-2 data-[current]:bg-surface-1 cursor-default select-none transition-colors"
   style:grid-template-columns="var(--track-row-grid)"
   data-current={status !== 'idle' ? '' : undefined}
+  oncontextmenu={handleContextMenu}
+  ontouchstart={handleTouchStart}
+  ontouchend={handleTouchEnd}
+  ontouchcancel={handleTouchEnd}
 >
   <button
     type="button"
@@ -98,16 +136,11 @@ let menuButton = $state<HTMLElement>();
   {/if}
 
   <div class="max-sm:hidden">
-    {#if track.source}
-      <QualityBadge source={track.source} interactive={false} />
+    {#if track.quality}
+      <QualityBadge source={track.quality} interactive={false} />
     {/if}
   </div>
 
-  <!--
-    Like/menu have no grid track on mobile (TrackTable's mobile template is index/title/time only —
-    there's no hover state to reveal them on touch anyway). Reaching them there is a Phase C
-    interaction decision: swipe actions, a persistent small icon, or a tap-row-to-open sheet.
-  -->
   <button
     type="button"
     onclick={onlike}
@@ -122,11 +155,15 @@ let menuButton = $state<HTMLElement>();
 
   <span class="font-mono text-xs text-ink-muted text-right" data-numeric>{formatDurationMs(track.durationMs)}</span>
 
+  <!-- More options button: visible on hover/focus on desktop; always accessible on touch -->
   <button
     bind:this={menuButton}
     type="button"
-    onclick={() => menuButton && onmenu?.(menuButton)}
-    class="max-sm:hidden opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-ink-muted hover:text-ink transition-opacity"
+    onclick={(e) => {
+      e.stopPropagation();
+      triggerMenu(menuButton);
+    }}
+    class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-sm:opacity-100 text-ink-muted hover:text-ink transition-opacity flex items-center justify-center p-1"
     aria-label="More options for {track.title}"
   >
     <DotsThree size={18} weight="bold" />

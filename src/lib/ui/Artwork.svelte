@@ -1,4 +1,6 @@
 <script lang="ts">
+import { artUrl } from '$lib/art';
+
 interface Props {
   src?: string | null;
   alt: string;
@@ -9,6 +11,7 @@ interface Props {
 
 let { src, alt, size = 48, radius = 'sm', class: className = '' }: Props = $props();
 let failed = $state(false);
+const proxiedSrc = $derived(src ? artUrl(src, size) : undefined);
 const rounded = $derived(radius === 'full' ? 'rounded-full' : 'rounded-sm');
 </script>
 
@@ -17,9 +20,9 @@ const rounded = $derived(radius === 'full' ? 'rounded-full' : 'rounded-sm');
   style:width="{size}px"
   style:height="{size}px"
 >
-  {#if src && !failed}
+  {#if proxiedSrc && !failed}
     <img
-      {src}
+      src={proxiedSrc}
       {alt}
       loading="lazy"
       decoding="async"

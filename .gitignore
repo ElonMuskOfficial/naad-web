@@ -9,4 +9,7 @@ dev-dist/
 *.log
 coverage/
 var/
+test-results/
+playwright-report/
+screenshots/
 .DS_Store

@@ -39,12 +39,12 @@ export default defineConfig({
     }),
   ],
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/v1': { target: ENGINE_URL, changeOrigin: true },
       '/healthz': { target: ENGINE_URL, changeOrigin: true },
       '/docs': { target: ENGINE_URL, changeOrigin: true },
     },
   },
-  // Vitest config (client + server projects) is added once there are tests to run — verified
-  // against the current Vitest/Svelte-testing docs at that point rather than guessed here.
 });

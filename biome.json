@@ -1,7 +1,16 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/.svelte-kit", "!**/build", "!**/dist"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.svelte-kit",
+      "!**/build",
+      "!**/dist",
+      "!**/test-results",
+      "!**/playwright-report",
+      "!src/lib/api/schema.d.ts"
+    ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 110 },
   "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all" } },

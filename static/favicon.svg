@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>NAAD</title>
+  <rect width="512" height="512" rx="64" fill="#141312" />
+  <!-- NAAD Geometric Signal Mark -->
+  <path d="M 140 380 L 140 132 L 200 132 L 312 312 L 312 132 L 372 132 L 372 380 L 312 380 L 200 200 L 200 380 Z" fill="#FFB547" />
+  <circle cx="372" cy="380" r="14" fill="#ECE8E1" />
+</svg>

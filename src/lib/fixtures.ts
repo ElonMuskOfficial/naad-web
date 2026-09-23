@@ -2,7 +2,7 @@
  * Phase A/B fixtures: real-shaped data (including long Devanagari titles) so the design system
  * is never reviewed against lorem ipsum. Deleted once Phase C wires the generated API client.
  */
-import type { Album, Artist, Playlist, Track } from './types';
+import type { Album, Artist, Playlist, Source, Track } from './types';
 
 const img = (seed: string, size = 500): { url: string } => ({
   url: `https://picsum.photos/seed/${seed}/${size}`,
@@ -17,20 +17,20 @@ export const artists: Artist[] = [
 
 export const albums: Album[] = [
   {
-    id: 'alb_afterhours',
-    title: 'After Hours',
+    id: 'alb_01m34h8ahbb1vrn8v3nw2k0p2n',
+    title: 'The Highlights',
     albumType: 'album',
-    releaseDate: '2020-03-20',
+    releaseDate: '2021-02-05',
     label: 'Republic Records',
     upc: '00602508686208',
     trackCount: 14,
-    explicit: true,
+    explicit: false,
     artists: [artists[0]!],
-    images: [img('afterhours')],
+    images: [{ url: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg' }],
   },
   {
-    id: 'alb_brahmastra',
-    title: 'Brahmāstra Part One: Shiva',
+    id: 'alb_01m34h87p5bh35km3rvpvt7r7y',
+    title: 'Brahmastra',
     albumType: 'album',
     releaseDate: '2022-07-06',
     label: 'Sony Music Entertainment India',
@@ -38,13 +38,52 @@ export const albums: Album[] = [
     trackCount: 9,
     explicit: false,
     artists: [artists[2]!, artists[1]!],
-    images: [img('brahmastra')],
+    images: [
+      {
+        url: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg',
+      },
+    ],
+  },
+];
+
+export const sources: Source[] = [
+  {
+    id: 'src_1',
+    provider: 'monochrome',
+    tier: 'hires',
+    codec: 'flac',
+    container: 'flac',
+    mimeType: 'audio/flac',
+    bitDepth: 24,
+    sampleRate: 44100,
+    bitrateKbps: 1626,
+    durationMs: 200040,
+    delivery: 'redirect',
+    matchScore: 1,
+    normalization: { gainDb: -4.2, lufs: -9.8 },
+    verifiedAt: new Date().toISOString(),
+  },
+  {
+    id: 'src_2',
+    provider: 'monochrome',
+    tier: 'hires',
+    codec: 'flac',
+    container: 'flac',
+    mimeType: 'audio/flac',
+    bitDepth: 24,
+    sampleRate: 96000,
+    bitrateKbps: 3002,
+    durationMs: 268164,
+    delivery: 'redirect',
+    matchScore: 1,
+    normalization: { gainDb: -2.1, lufs: -11.4 },
+    verifiedAt: new Date().toISOString(),
   },
 ];
 
 export const tracks: Track[] = [
   {
-    id: 'trk_blinding',
+    id: 'trk_01m34h8ag377tk945cmwgwj01p',
     title: 'Blinding Lights',
     versionTags: [],
     artists: [artists[0]!],
@@ -54,25 +93,19 @@ export const tracks: Track[] = [
     explicit: false,
     discNumber: 1,
     trackNumber: 9,
-    images: [img('afterhours')],
-    source: {
-      id: 'src_1',
+    images: [{ url: 'https://c.saavncdn.com/396/The-Highlights-English-2021-20240207045714-500x500.jpg' }],
+    quality: {
       provider: 'monochrome',
       tier: 'hires',
       codec: 'flac',
-      container: 'flac',
-      mimeType: 'audio/flac',
       bitDepth: 24,
       sampleRate: 44100,
-      bitrateKbps: null,
-      delivery: 'redirect',
-      matchScore: 1,
-      normalization: { gainDb: -4.2, lufs: -9.8 },
+      bitrateKbps: 1626,
       verifiedAt: new Date().toISOString(),
     },
   },
   {
-    id: 'trk_kesariya',
+    id: 'trk_01m34h87j97k357z25f6hpnrtj',
     title: 'केसरिया',
     versionTags: [],
     artists: [artists[2]!, artists[1]!, artists[3]!],
@@ -82,20 +115,18 @@ export const tracks: Track[] = [
     explicit: false,
     discNumber: 1,
     trackNumber: 3,
-    images: [img('brahmastra')],
-    source: {
-      id: 'src_2',
+    images: [
+      {
+        url: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-500x500.jpg',
+      },
+    ],
+    quality: {
       provider: 'monochrome',
       tier: 'hires',
       codec: 'flac',
-      container: 'flac',
-      mimeType: 'audio/flac',
       bitDepth: 24,
       sampleRate: 96000,
-      bitrateKbps: null,
-      delivery: 'redirect',
-      matchScore: 1,
-      normalization: { gainDb: -2.1, lufs: -11.4 },
+      bitrateKbps: 3002,
       verifiedAt: new Date().toISOString(),
     },
   },
@@ -111,19 +142,13 @@ export const tracks: Track[] = [
     discNumber: null,
     trackNumber: null,
     images: [img('kesariya-lofi')],
-    source: {
-      id: 'src_3',
+    quality: {
       provider: 'jiosaavn',
       tier: 'high',
       codec: 'aac',
-      container: 'mp4',
-      mimeType: 'audio/mp4',
       bitDepth: null,
       sampleRate: 44100,
       bitrateKbps: 320,
-      delivery: 'redirect',
-      matchScore: 0.94,
-      normalization: null,
       verifiedAt: new Date().toISOString(),
     },
   },
@@ -139,19 +164,13 @@ export const tracks: Track[] = [
     discNumber: null,
     trackNumber: null,
     images: [img('tumhiho')],
-    source: {
-      id: 'src_4',
+    quality: {
       provider: 'jiosaavn',
       tier: 'high',
       codec: 'aac',
-      container: 'mp4',
-      mimeType: 'audio/mp4',
       bitDepth: null,
       sampleRate: 44100,
       bitrateKbps: 320,
-      delivery: 'redirect',
-      matchScore: 0.98,
-      normalization: null,
       verifiedAt: new Date().toISOString(),
     },
   },
@@ -168,19 +187,13 @@ export const tracks: Track[] = [
     discNumber: null,
     trackNumber: null,
     images: [],
-    source: {
-      id: 'src_5',
+    quality: {
       provider: 'youtube',
       tier: 'standard',
       codec: 'opus',
-      container: 'webm',
-      mimeType: 'audio/webm',
       bitDepth: null,
       sampleRate: 48000,
       bitrateKbps: 160,
-      delivery: 'materialize',
-      matchScore: 0.81,
-      normalization: null,
       verifiedAt: new Date().toISOString(),
     },
   },
@@ -196,6 +209,7 @@ export const tracks: Track[] = [
     discNumber: null,
     trackNumber: null,
     images: [],
+    quality: null,
   },
 ];
 

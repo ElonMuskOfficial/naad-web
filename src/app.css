@@ -28,7 +28,7 @@
   --border-strong: rgb(236 232 225 / 18%);
   --ink: #ece8e1;
   --ink-muted: rgb(236 232 225 / 60%);
-  --ink-faint: rgb(236 232 225 / 36%);
+  --ink-faint: rgb(236 232 225 / 50%);
   --accent: #ffb547; /* phosphor amber — reserved for signal, never decoration */
   --accent-ink: #1a1210; /* text/icons sitting on top of the accent */
   --danger: #e5484d;
@@ -51,7 +51,7 @@
   --border-strong: rgb(26 25 23 / 22%);
   --ink: #1a1917;
   --ink-muted: rgb(26 25 23 / 58%);
-  --ink-faint: rgb(26 25 23 / 36%);
+  --ink-faint: rgb(26 25 23 / 60%);
   --accent-ink: #241a0c;
   --danger-ink: #2b0505;
   color-scheme: light;
@@ -68,7 +68,7 @@
     --border-strong: rgb(26 25 23 / 22%);
     --ink: #1a1917;
     --ink-muted: rgb(26 25 23 / 58%);
-    --ink-faint: rgb(26 25 23 / 36%);
+    --ink-faint: rgb(26 25 23 / 60%);
     --accent-ink: #241a0c;
     --danger-ink: #2b0505;
     color-scheme: light;
@@ -88,6 +88,16 @@
     --duration-base: 0ms;
     --duration-slow: 0ms;
   }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @theme {

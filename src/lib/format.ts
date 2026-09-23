@@ -57,8 +57,24 @@ export function describeQuality(source: {
   return { tier: source.tier, label: codec, detail: codec };
 }
 
+export function formatBitrate(kbps?: number | null): string {
+  if (!kbps || kbps <= 0) return '—';
+  return `${kbps.toLocaleString()} kbps`;
+}
+
+export function formatSampleRate(hz?: number | null): string {
+  if (!hz || hz <= 0) return '—';
+  if (hz >= 1000) {
+    const khz = (hz / 1000).toFixed(hz % 1000 === 0 ? 0 : 1);
+    return `${khz} kHz`;
+  }
+  return `${hz} Hz`;
+}
+
 /** Joins credited artist names the way a sleeve would: "A, B & C". */
-export function joinArtists(names: string[]): string {
+export function joinArtists(artists?: (string | { name: string })[] | null): string {
+  if (!artists || artists.length === 0) return '';
+  const names = artists.map((a) => (typeof a === 'string' ? a : a.name));
   if (names.length <= 1) return names[0] ?? '';
   if (names.length === 2) return `${names[0]} & ${names[1]}`;
   return `${names.slice(0, -1).join(', ')} & ${names.at(-1)}`;

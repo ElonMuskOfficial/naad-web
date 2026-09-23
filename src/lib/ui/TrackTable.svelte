@@ -42,7 +42,7 @@ const desktopGrid = $derived(
 );
 </script>
 
-<div class="[--track-row-grid:28px_minmax(0,1fr)_48px] {desktopGrid}">
+<div class="[--track-row-grid:28px_minmax(0,1fr)_44px_24px] {desktopGrid}">
   <div
     class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint max-sm:hidden"
     style:grid-template-columns="var(--track-row-grid)"
@@ -66,7 +66,7 @@ const desktopGrid = $derived(
         status={track.id === currentId ? (playing ? 'playing' : 'current') : 'idle'}
         onplay={() => onplay?.(track, i)}
         onlike={() => onlike?.(track)}
-        onmenu={(anchor) => onmenu?.(track, anchor)}
+        onmenu={onmenu ? (anchor) => onmenu(track, anchor) : undefined}
       />
     {/each}
   </div>
