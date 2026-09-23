@@ -28,18 +28,25 @@ const homeQuery = createHomeQuery();
     <!-- Skeletons matching real shelf layout: 3 shelves with titles and card rows (no shimmer) -->
     <div class="flex flex-col gap-8" aria-label="Loading discovery shelves">
       {#each [1, 2, 3] as shelfIdx (shelfIdx)}
-        <div class="flex flex-col gap-3">
-          <Skeleton class="h-4 w-44 rounded-xs" />
-          <div class="flex gap-4 overflow-hidden">
+        <section class="min-w-0">
+          <div class="mb-3 flex items-baseline justify-between gap-4 px-1">
+            <Skeleton class="h-5 w-44 rounded-xs" />
+          </div>
+          <div class="flex gap-4 overflow-hidden pb-1 pl-1">
             {#each [1, 2, 3, 4, 5, 6] as cardIdx (cardIdx)}
-              <div class="flex flex-col gap-2 shrink-0">
-                <Skeleton class="size-[148px] rounded-sm" />
-                <Skeleton class="h-3 w-28 rounded-xs" />
-                <Skeleton class="h-2.5 w-20 rounded-xs" />
+              <div
+                class="flex shrink-0 flex-col gap-2 rounded-xs p-1 -m-1"
+                style="width: 148px;"
+              >
+                <Skeleton class="size-[148px] rounded-sm shrink-0" />
+                <div class="min-w-0 flex flex-col gap-1.5 pt-0.5">
+                  <Skeleton class="h-4 w-28 rounded-xs" />
+                  <Skeleton class="h-3 w-20 rounded-xs" />
+                </div>
               </div>
             {/each}
           </div>
-        </div>
+        </section>
       {/each}
     </div>
   {:else if homeQuery.isError}
