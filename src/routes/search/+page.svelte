@@ -1,7 +1,8 @@
 <script lang="ts">
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
-import { createLikedContainsQuery, createSearchQuery, type SearchType } from '$lib/queries';
+import { bestImageUrl } from '$lib/art';
+import { createLikedContainsQuery, createSearchQuery, toggleLikeTrack, type SearchType } from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
 import type { Album, Artist, Playlist, Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
@@ -232,7 +233,7 @@ function handleTopResultClick() {
             >
               <div class="relative size-24 sm:size-28 shrink-0 rounded-xs overflow-hidden bg-surface-2 border border-border">
                 <Artwork
-                  src={top.item.images?.[0]?.url}
+                  src={bestImageUrl(top.item.images, 200) ?? ('album' in top.item ? bestImageUrl(top.item.album?.images, 200) : undefined)}
                   alt={top.type === 'artist' ? top.item.name : top.item.title}
                   size={120}
                   class={top.type === 'artist' ? 'rounded-full' : ''}
@@ -302,6 +303,7 @@ function handleTopResultClick() {
               currentId={player.currentTrack?.id}
               playing={player.status === 'playing'}
               onplay={(t) => playTrack(t, searchResults.tracks)}
+              onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
             />
           </div>
         {/if}
@@ -325,7 +327,7 @@ function handleTopResultClick() {
               <MediaCard
                 title={album.title}
                 subtitle={album.artists.map((a) => a.name).join(', ')}
-                image={album.images?.[0]?.url}
+                image={bestImageUrl(album.images, 300)}
                 href={`/album/${album.id}`}
               />
             {/each}
@@ -351,7 +353,7 @@ function handleTopResultClick() {
               <MediaCard
                 title={artist.name}
                 subtitle="Artist"
-                image={artist.images?.[0]?.url}
+                image={bestImageUrl(artist.images, 300)}
                 href={`/artist/${artist.id}`}
                 shape="circle"
               />
@@ -378,7 +380,7 @@ function handleTopResultClick() {
               <MediaCard
                 title={playlist.title}
                 subtitle={playlist.description ?? 'Playlist'}
-                image={playlist.images?.[0]?.url}
+                image={bestImageUrl(playlist.images, 300)}
                 href={`/playlist/${playlist.id}`}
               />
             {/each}
@@ -399,6 +401,7 @@ function handleTopResultClick() {
           currentId={player.currentTrack?.id}
           playing={player.status === 'playing'}
           onplay={(t) => playTrack(t, searchResults.tracks)}
+          onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
         />
       </div>
     {:else if activeTab === 'albums'}
@@ -412,7 +415,7 @@ function handleTopResultClick() {
             <MediaCard
               title={album.title}
               subtitle={album.artists.map((a) => a.name).join(', ')}
-              image={album.images?.[0]?.url}
+              image={bestImageUrl(album.images, 300)}
               href={`/album/${album.id}`}
             />
           {/each}
@@ -429,7 +432,7 @@ function handleTopResultClick() {
             <MediaCard
               title={artist.name}
               subtitle="Artist"
-              image={artist.images?.[0]?.url}
+              image={bestImageUrl(artist.images, 300)}
               href={`/artist/${artist.id}`}
               shape="circle"
             />
@@ -447,7 +450,7 @@ function handleTopResultClick() {
             <MediaCard
               title={playlist.title}
               subtitle={playlist.description ?? 'Playlist'}
-              image={playlist.images?.[0]?.url}
+              image={bestImageUrl(playlist.images, 300)}
               href={`/playlist/${playlist.id}`}
             />
           {/each}

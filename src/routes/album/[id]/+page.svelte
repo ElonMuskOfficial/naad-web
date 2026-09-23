@@ -1,9 +1,10 @@
 <script lang="ts">
 import { page } from '$app/state';
+import { bestImageUrl } from '$lib/art';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Play, Shuffle } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
-import { createAlbumQuery, createLikedContainsQuery } from '$lib/queries';
+import { createAlbumQuery, createLikedContainsQuery, toggleLikeTrack } from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
@@ -127,7 +128,7 @@ function toggleSave() {
     <!-- 1. Liner-Notes Header -->
     <header class="flex flex-col sm:flex-row items-start sm:items-end gap-6 pb-6 border-b border-border">
       <Artwork
-        src={album.images?.[0]?.url}
+        src={bestImageUrl(album.images, 300)}
         alt={album.title}
         size={220}
         class="shrink-0 max-sm:size-[160px] shadow-float"
@@ -219,12 +220,7 @@ function toggleSave() {
               currentId={player.currentTrack?.id}
               playing={player.status === 'playing'}
               onplay={(t) => player.playTrack(t, album.tracks)}
-              onlike={(t) => {
-                const next = new Set(likedIds);
-                const willLike = !next.has(t.id);
-                willLike ? next.add(t.id) : next.delete(t.id);
-                toast.push(willLike ? `Added "${t.title}" to Liked Songs` : `Removed "${t.title}" from Liked Songs`);
-              }}
+              onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
             />
           </div>
         {/each}
@@ -237,12 +233,7 @@ function toggleSave() {
           currentId={player.currentTrack?.id}
           playing={player.status === 'playing'}
           onplay={(t) => player.playTrack(t, album.tracks)}
-          onlike={(t) => {
-            const next = new Set(likedIds);
-            const willLike = !next.has(t.id);
-            willLike ? next.add(t.id) : next.delete(t.id);
-            toast.push(willLike ? `Added "${t.title}" to Liked Songs` : `Removed "${t.title}" from Liked Songs`);
-          }}
+          onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
         />
       {/if}
     </div>

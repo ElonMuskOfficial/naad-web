@@ -1,4 +1,5 @@
 <script lang="ts">
+import { bestImageUrl } from '$lib/art';
 import { joinArtists } from '$lib/format';
 import { Pause, Play, SkipNext } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
@@ -25,11 +26,11 @@ const progressPct = $derived(
 
     <!-- Left: Artwork and Track Info -->
     <a
-      href="/now-playing"
+      href={`/now-playing/${player.currentTrack.id}`}
       class="flex min-w-0 flex-1 items-center gap-2.5 pr-2 focus-visible:outline-none"
     >
       <Artwork
-        src={player.currentTrack.images?.[0]?.url}
+        src={bestImageUrl(player.currentTrack.images, 100) ?? bestImageUrl(player.currentTrack.album?.images, 100)}
         alt={player.currentTrack.title}
         size={36}
       />

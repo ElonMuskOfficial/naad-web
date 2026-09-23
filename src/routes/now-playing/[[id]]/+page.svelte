@@ -1,9 +1,12 @@
 <script lang="ts">
+import { goto } from '$app/navigation';
 import { page } from '$app/state';
+import { bestImageUrl } from '$lib/art';
 import { extractAmbientPalette, type AmbientPalette } from '$lib/color/ambient';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Pause, Play, Repeat, Shuffle, SkipNext, SkipPrevious } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
+import { createLikedContainsQuery, createTrackQuery, toggleLikeTrack } from '$lib/queries';
 import Artwork from '$lib/ui/Artwork.svelte';
 import IconButton from '$lib/ui/IconButton.svelte';
 import LyricsStage from '$lib/ui/LyricsStage.svelte';
@@ -20,10 +23,28 @@ import SpeakerSimpleX from 'phosphor-svelte/lib/SpeakerSimpleX';
 type NowPlayingTab = 'player' | 'lyrics' | 'queue' | 'signal';
 
 let activeTab = $state<NowPlayingTab>('lyrics');
-let liked = $state(false);
 let ambientPalette = $state<AmbientPalette>({
   ambient1: 'rgb(40, 38, 36)',
   ambient2: 'rgb(24, 23, 22)',
+});
+
+const routeTrackId = $derived(page.params.id);
+const routeTrackQuery = createTrackQuery(() => routeTrackId ?? '');
+
+// If route specified a track ID and it's not currently playing, load and play it
+$effect(() => {
+  if (routeTrackId && routeTrackQuery.data && player.currentTrack?.id !== routeTrackId) {
+    player.playTrack(routeTrackQuery.data, [routeTrackQuery.data]);
+  }
+});
+
+// Keep URL path in sync with currentTrack without triggering full page reloads
+$effect(() => {
+  const currentId = player.currentTrack?.id;
+  if (currentId && page.params.id !== currentId) {
+    const search = window.location.search;
+    window.history.replaceState({}, '', `/now-playing/${currentId}${search}`);
+  }
 });
 
 // Sync tab from URL query param if present (?tab=signal, ?tab=queue, ?tab=lyrics, ?tab=player)
@@ -34,9 +55,15 @@ $effect(() => {
   }
 });
 
+// Like status query for currently playing track
+const currentTrackIdList = $derived(player.currentTrack?.id ? [player.currentTrack.id] : []);
+const likedQuery = createLikedContainsQuery(() => currentTrackIdList);
+const isLiked = $derived(likedQuery.data ? likedQuery.data.has(player.currentTrack?.id ?? '') : false);
+
 // Extract ambient colors from artwork when current track changes
 $effect(() => {
-  const artworkUrl = player.currentTrack?.images?.[0]?.url ?? player.currentTrack?.album?.images?.[0]?.url;
+  const artworkUrl =
+    bestImageUrl(player.currentTrack?.images, 600) ?? bestImageUrl(player.currentTrack?.album?.images, 600);
   if (artworkUrl) {
     extractAmbientPalette(artworkUrl).then((palette) => {
       ambientPalette = palette;
@@ -45,7 +72,7 @@ $effect(() => {
 });
 
 const currentArtwork = $derived(
-  player.currentTrack?.images?.[0]?.url ?? player.currentTrack?.album?.images?.[0]?.url,
+  bestImageUrl(player.currentTrack?.images, 600) ?? bestImageUrl(player.currentTrack?.album?.images, 600),
 );
 
 function switchTab(tab: NowPlayingTab) {
@@ -53,6 +80,14 @@ function switchTab(tab: NowPlayingTab) {
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
   window.history.replaceState({}, '', url.toString());
+}
+
+function handleClose() {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    goto('/');
+  }
 }
 </script>
 
@@ -80,7 +115,7 @@ function switchTab(tab: NowPlayingTab) {
   <header class="relative z-10 flex h-14 shrink-0 items-center justify-between px-3 sm:px-6 border-b border-border/40">
     <button
       type="button"
-      onclick={() => window.history.back()}
+      onclick={handleClose}
       class="inline-flex items-center gap-1.5 p-2 text-ink-muted hover:text-ink transition-colors focus-visible:outline-none"
       aria-label="Dismiss Now Playing"
     >
@@ -149,12 +184,16 @@ function switchTab(tab: NowPlayingTab) {
       {#if player.currentTrack}
         <button
           type="button"
-          onclick={() => (liked = !liked)}
+          onclick={() => {
+            if (player.currentTrack) {
+              toggleLikeTrack(player.currentTrack, isLiked);
+            }
+          }}
           class="p-2 text-ink-muted hover:text-accent transition-colors"
-          class:text-accent={liked}
-          aria-label={liked ? 'Unlike track' : 'Like track'}
+          class:text-accent={isLiked}
+          aria-label={isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
         >
-          <Heart size={18} weight={liked ? 'fill' : 'light'} />
+          <Heart size={18} weight={isLiked ? 'fill' : 'light'} />
         </button>
       {/if}
     </div>
@@ -347,7 +386,7 @@ function switchTab(tab: NowPlayingTab) {
                         {/if}
                       </span>
                       <Artwork
-                        src={track.images?.[0]?.url ?? track.album?.images?.[0]?.url}
+                        src={bestImageUrl(track.images, 100) ?? bestImageUrl(track.album?.images, 100)}
                         alt=""
                         size={36}
                       />

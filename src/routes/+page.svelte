@@ -1,5 +1,6 @@
 <script lang="ts">
 import { goto } from '$app/navigation';
+import { bestImageUrl } from '$lib/art';
 import { joinArtists } from '$lib/format';
 import { player } from '$lib/player/engine.svelte';
 import { createHomeQuery } from '$lib/queries';
@@ -79,7 +80,7 @@ const homeQuery = createHomeQuery();
                 href={track.album ? `/album/${track.album.id}` : '#'}
                 title={track.title}
                 subtitle={joinArtists(track.artists)}
-                image={track.images?.[0]?.url ?? track.album?.images?.[0]?.url}
+                image={bestImageUrl(track.images, 300) ?? bestImageUrl(track.album?.images, 300)}
                 size={148}
                 rank={section.id.includes('top') || section.id.includes('chart') ? idx + 1 : undefined}
                 onplay={() => player.playTrack(track, section.items as Track[])}
@@ -92,7 +93,7 @@ const homeQuery = createHomeQuery();
                 href={`/album/${album.id}`}
                 title={album.title}
                 subtitle={album.releaseDate ? album.releaseDate.slice(0, 4) : (album.artists?.length ? joinArtists(album.artists) : undefined)}
-                image={album.images?.[0]?.url}
+                image={bestImageUrl(album.images, 300)}
                 size={148}
               />
             {/each}
@@ -104,7 +105,7 @@ const homeQuery = createHomeQuery();
                 title={artist.name}
                 subtitle="Artist"
                 shape="circle"
-                image={artist.images?.[0]?.url}
+                image={bestImageUrl(artist.images, 300)}
                 size={148}
               />
             {/each}
@@ -115,7 +116,7 @@ const homeQuery = createHomeQuery();
                 href={`/playlist/${playlist.id}`}
                 title={playlist.title}
                 subtitle={playlist.description ?? (playlist.trackCount ? `${playlist.trackCount} tracks` : undefined)}
-                image={playlist.images?.[0]?.url}
+                image={bestImageUrl(playlist.images, 300)}
                 size={148}
               />
             {/each}

@@ -1,5 +1,7 @@
 import { createQuery, QueryClient } from '@tanstack/svelte-query';
 import { api } from '$lib/api/client';
+import { toast } from '$lib/toast.svelte';
+import type { Track } from '$lib/types';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -319,4 +321,36 @@ export function createImportStatusQuery(id: MaybeAccessor<string | undefined>) {
       },
     };
   });
+}
+
+/**
+ * Toggles a track's liked status via PUT /v1/library/tracks or DELETE /v1/library/tracks,
+ * invalidating relevant queries and displaying a notification.
+ */
+export async function toggleLikeTrack(track: Track, isLiked: boolean): Promise<boolean> {
+  try {
+    if (isLiked) {
+      const { error } = await api.DELETE('/v1/library/tracks', {
+        body: { trackIds: [track.id] },
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['library', 'tracks'] });
+      queryClient.invalidateQueries({ queryKey: ['likedContains'] });
+      toast.push(`Removed "${track.title}" from Liked Songs`);
+      return false;
+    } else {
+      const { error } = await api.PUT('/v1/library/tracks', {
+        body: { trackIds: [track.id] },
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['library', 'tracks'] });
+      queryClient.invalidateQueries({ queryKey: ['likedContains'] });
+      toast.push(`Added "${track.title}" to Liked Songs`);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[toggleLikeTrack] error:', err);
+    toast.push('Could not update Liked Songs', { tone: 'danger' });
+    throw err;
+  }
 }

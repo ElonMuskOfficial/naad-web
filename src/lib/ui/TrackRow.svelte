@@ -1,6 +1,7 @@
 <script lang="ts">
 import DotsThree from 'phosphor-svelte/lib/DotsThree';
 import Heart from 'phosphor-svelte/lib/Heart';
+import { bestImageUrl } from '$lib/art';
 import { trackMenu } from '$lib/context-menu.svelte';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Play } from '$lib/icons';
@@ -35,7 +36,7 @@ let {
 }: Props = $props();
 
 const artist = $derived(joinArtists(track.artists.map((a) => a.name)));
-const artwork = $derived(track.images[0]?.url ?? track.album?.images[0]?.url);
+const artwork = $derived(bestImageUrl(track.images, 120) ?? bestImageUrl(track.album?.images, 120));
 let menuButton = $state<HTMLElement>();
 let rowElement = $state<HTMLElement>();
 let touchTimer: ReturnType<typeof setTimeout> | null = null;

@@ -11,7 +11,7 @@ import User from 'phosphor-svelte/lib/User';
 import { api } from '$lib/api/client';
 import { trackMenu } from '$lib/context-menu.svelte';
 import { type PlayerEngine } from '$lib/player/engine.svelte';
-import { createLibraryPlaylistsQuery } from '$lib/queries';
+import { createLibraryPlaylistsQuery, createLikedContainsQuery, toggleLikeTrack } from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import Menu from './Menu.svelte';
@@ -27,23 +27,18 @@ let { player }: Props = $props();
 const queryClient = useQueryClient();
 const playlistsQuery = createLibraryPlaylistsQuery();
 
-// Liked tracks set check
+const likedQuery = createLikedContainsQuery(() => (trackMenu.track ? [trackMenu.track.id] : []));
+const isLiked = $derived(Boolean(trackMenu.track && likedQuery.data?.has(trackMenu.track.id)));
+
 async function handleToggleLike() {
   if (!trackMenu.track) return;
   const track = trackMenu.track;
   trackMenu.close();
 
   try {
-    // Check if liked or optimistic toggle
-    const { error } = await api.PUT('/v1/library/tracks', {
-      body: { trackIds: [track.id] },
-    });
-    if (error) throw error;
-    queryClient.invalidateQueries({ queryKey: ['library', 'tracks'] });
-    toast.push(`Added "${track.title}" to Liked Songs`);
+    await toggleLikeTrack(track, isLiked);
   } catch (err) {
     console.warn('[TrackContextMenu] like error:', err);
-    toast.push('Could not update Liked Songs', { tone: 'danger' });
   }
 }
 
@@ -126,8 +121,8 @@ async function handleAddTrackToPlaylist(playlistId: string, playlistTitle: strin
     </MenuItem>
 
     <MenuItem onSelect={handleToggleLike}>
-      {#snippet icon()}<Heart size={16} />{/snippet}
-      Save to Liked Songs
+      {#snippet icon()}<Heart size={16} weight={isLiked ? 'fill' : 'regular'} class={isLiked ? 'text-accent' : ''} />{/snippet}
+      {isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
     </MenuItem>
 
     <MenuItem onSelect={() => trackMenu.track && trackMenu.openAddToPlaylist(trackMenu.track)}>

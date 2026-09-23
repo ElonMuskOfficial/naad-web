@@ -12,6 +12,7 @@ import {
   createLikedTracksQuery,
   createSavedAlbumsQuery,
   queryClient,
+  toggleLikeTrack,
 } from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
@@ -308,6 +309,7 @@ function formatRelativeTime(isoString: string): string {
           currentId={player.currentTrack?.id}
           playing={player.status === 'playing'}
           onplay={(t) => player.playTrack(t, likedTracks, { type: 'library', id: 'tracks' })}
+          onlike={(t) => toggleLikeTrack(t, true)}
         />
       </div>
     {/if}

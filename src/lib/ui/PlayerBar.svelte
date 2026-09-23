@@ -2,6 +2,7 @@
 import { joinArtists } from '$lib/format';
 import { Pause, Play, Repeat, Shuffle, SkipNext, SkipPrevious } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
+import { createLikedContainsQuery, toggleLikeTrack } from '$lib/queries';
 import Heart from 'phosphor-svelte/lib/Heart';
 import Queue from 'phosphor-svelte/lib/Queue';
 import Quotes from 'phosphor-svelte/lib/Quotes';
@@ -11,9 +12,11 @@ import SpeakerSimpleX from 'phosphor-svelte/lib/SpeakerSimpleX';
 import Artwork from './Artwork.svelte';
 import IconButton from './IconButton.svelte';
 import QualityBadge from './QualityBadge.svelte';
+import { bestImageUrl } from '$lib/art';
 import Scrubber from './Scrubber.svelte';
 
-let liked = $state(false);
+const likedQuery = createLikedContainsQuery(() => (player.currentTrack ? [player.currentTrack.id] : []));
+const isLiked = $derived(Boolean(player.currentTrack && likedQuery.data?.has(player.currentTrack.id)));
 
 function toggleTab(tab: 'queue' | 'lyrics') {
   if (player.rightPanelOpen && player.activeTab === tab) {
@@ -38,9 +41,12 @@ function toggleTab(tab: 'queue' | 'lyrics') {
   <!-- Left: Artwork & Track info -->
   <div class="flex w-[260px] shrink-0 items-center gap-3">
     {#if player.currentTrack}
-      <a href="/now-playing" class="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none">
+      <a
+        href={`/now-playing/${player.currentTrack.id}`}
+        class="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none"
+      >
         <Artwork
-          src={player.currentTrack.images?.[0]?.url}
+          src={bestImageUrl(player.currentTrack.images, 120) ?? bestImageUrl(player.currentTrack.album?.images, 120)}
           alt={player.currentTrack.title}
           size={48}
         />
@@ -55,13 +61,13 @@ function toggleTab(tab: 'queue' | 'lyrics') {
       </a>
       <button
         type="button"
-        onclick={() => (liked = !liked)}
+        onclick={() => player.currentTrack && toggleLikeTrack(player.currentTrack, isLiked)}
         class="shrink-0 p-1 text-ink-muted hover:text-accent transition-colors"
-        class:text-accent={liked}
-        aria-label={liked ? 'Unlike' : 'Like'}
-        aria-pressed={liked}
+        class:text-accent={isLiked}
+        aria-label={isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+        aria-pressed={isLiked}
       >
-        <Heart size={18} weight={liked ? 'fill' : 'light'} />
+        <Heart size={18} weight={isLiked ? 'fill' : 'light'} />
       </button>
     {:else}
       <div class="flex min-w-0 flex-1 items-center gap-3 select-none opacity-60">

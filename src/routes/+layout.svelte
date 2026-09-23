@@ -1,8 +1,9 @@
 <script lang="ts">
 import '../app.css';
 import favicon from '$lib/assets/favicon.svg';
-import { goto } from '$app/navigation';
+import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
+import { tick } from 'svelte';
 import { api } from '$lib/api/client';
 import { type CommandContext, handleGlobalKeydown } from '$lib/keys';
 import { player } from '$lib/player/engine.svelte';
@@ -20,6 +21,35 @@ import { QueryClientProvider } from '@tanstack/svelte-query';
 
 let { children } = $props();
 const isNowPlaying = $derived(page.url.pathname.startsWith('/now-playing'));
+
+let mainEl = $state<HTMLElement>();
+const scrollPositions = new Map<string, number>();
+
+beforeNavigate(({ from }) => {
+  if (from?.url && mainEl) {
+    const key = from.url.pathname + from.url.search;
+    scrollPositions.set(key, mainEl.scrollTop);
+  }
+});
+
+afterNavigate(({ to, type }) => {
+  if (type === 'popstate' && to?.url && mainEl) {
+    const key = to.url.pathname + to.url.search;
+    const savedScroll = scrollPositions.get(key);
+    if (savedScroll !== undefined) {
+      tick().then(() => {
+        if (mainEl) {
+          mainEl.scrollTop = savedScroll;
+          requestAnimationFrame(() => {
+            if (mainEl) mainEl.scrollTop = savedScroll;
+          });
+        }
+      });
+    }
+  } else if (type !== 'popstate' && mainEl) {
+    mainEl.scrollTop = 0;
+  }
+});
 
 let paletteOpen = $state(false);
 
@@ -65,7 +95,7 @@ function onWindowKeydown(e: KeyboardEvent) {
     <!-- Center Column: Scrollable Content + Player Bar / Mobile Nav -->
     <div class="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
       <!-- Main Content Area -->
-      <main class="flex-1 min-w-0 overflow-y-auto bg-surface-0">
+      <main bind:this={mainEl} class="flex-1 min-w-0 overflow-y-auto bg-surface-0">
         {@render children()}
       </main>
 
