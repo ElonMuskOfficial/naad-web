@@ -152,8 +152,13 @@ function onResizeStart(e: PointerEvent) {
             </div>
 
             <div class="mt-1 flex flex-col gap-1">
-              {#each player.queue as track, idx (track.id + idx)}
-                {@const isCurrent = idx === player.queueIndex}
+              {#if player.queue.length === 0}
+                <div class="py-10 text-center text-xs text-ink-muted">
+                  Queue is empty
+                </div>
+              {:else}
+                {#each player.queue as track, idx (track.id + idx)}
+                  {@const isCurrent = idx === player.queueIndex}
                 <div
                   class="group flex items-center justify-between gap-2 p-1.5 rounded-xs transition-colors duration-[var(--duration-fast)]
                     {isCurrent ? 'bg-surface-2 border border-border' : 'hover:bg-surface-2'}"
@@ -225,6 +230,7 @@ function onResizeStart(e: PointerEvent) {
                   </span>
                 </div>
               {/each}
+              {/if}
             </div>
           </div>
         </div>

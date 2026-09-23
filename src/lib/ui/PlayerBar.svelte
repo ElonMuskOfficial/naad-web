@@ -37,22 +37,22 @@ function toggleTab(tab: 'queue' | 'lyrics') {
 
   <!-- Left: Artwork & Track info -->
   <div class="flex w-[260px] shrink-0 items-center gap-3">
-    <a href="/now-playing" class="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none">
-      <Artwork
-        src={player.currentTrack?.images?.[0]?.url}
-        alt={player.currentTrack?.title ?? 'Track artwork'}
-        size={48}
-      />
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium text-ink leading-snug hover:underline">
-          {player.currentTrack?.title ?? 'No track selected'}
-        </p>
-        <p class="truncate text-xs text-ink-muted leading-tight mt-0.5">
-          {player.currentTrack ? joinArtists(player.currentTrack.artists) : '—'}
-        </p>
-      </div>
-    </a>
     {#if player.currentTrack}
+      <a href="/now-playing" class="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none">
+        <Artwork
+          src={player.currentTrack.images?.[0]?.url}
+          alt={player.currentTrack.title}
+          size={48}
+        />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink leading-snug hover:underline">
+            {player.currentTrack.title}
+          </p>
+          <p class="truncate text-xs text-ink-muted leading-tight mt-0.5">
+            {joinArtists(player.currentTrack.artists)}
+          </p>
+        </div>
+      </a>
       <button
         type="button"
         onclick={() => (liked = !liked)}
@@ -63,6 +63,18 @@ function toggleTab(tab: 'queue' | 'lyrics') {
       >
         <Heart size={18} weight={liked ? 'fill' : 'light'} />
       </button>
+    {:else}
+      <div class="flex min-w-0 flex-1 items-center gap-3 select-none opacity-60">
+        <Artwork size={48} alt="No track" />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink-muted leading-snug">
+            No track selected
+          </p>
+          <p class="truncate text-xs text-ink-faint leading-tight mt-0.5">
+            —
+          </p>
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -124,6 +136,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
         bind:value={player.currentTime}
         duration={player.duration}
         buffered={player.buffered}
+        disabled={!player.currentTrack}
         onseek={(s) => player.seek(s)}
         size="sm"
         showTime={true}

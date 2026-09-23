@@ -3,11 +3,13 @@ import { tracks } from '$lib/fixtures';
 import { player } from './engine.svelte';
 
 describe('PlayerEngine', () => {
-  it('initializes with default mock track and sources for shell preview', () => {
-    expect(player.currentTrack).toBeDefined();
-    expect(player.currentTrack?.title).toBe('केसरिया');
-    expect(player.selectedSource).toBeDefined();
-    expect(player.selectedSource?.tier).toBe('hires');
+  it('initializes with clean idle state for production', () => {
+    expect(player.currentTrack).toBeNull();
+    expect(player.selectedSource).toBeNull();
+    expect(player.status).toBe('idle');
+    expect(player.currentTime).toBe(0);
+    expect(player.duration).toBe(0);
+    expect(player.queue).toEqual([]);
   });
 
   it('cycles repeat modes: off -> all -> one -> off', () => {
@@ -53,6 +55,8 @@ describe('PlayerEngine', () => {
   });
 
   it('toggles play/pause state', () => {
+    player.currentTrack = tracks[0]!;
+    player.currentPlayUrl = 'https://stream.example/track.flac';
     player.status = 'paused';
     player.togglePlay();
     expect(player.status).toBe('playing');

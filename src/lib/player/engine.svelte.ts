@@ -1,5 +1,4 @@
 import { api } from '$lib/api/client';
-import { sources, tracks } from '$lib/fixtures';
 import { toast } from '$lib/toast.svelte';
 import type { Source, Track } from '$lib/types';
 import { AudioGraph } from './audio-graph';
@@ -15,15 +14,15 @@ export const NORMALIZATION_STORAGE_KEY = 'naad:normalization';
 
 export class PlayerEngine {
   // Playback state (Svelte 5 runes)
-  currentTrack = $state<Track | null>(tracks[1] ?? null);
-  selectedSource = $state<Source | null>(sources[1] ?? null);
+  currentTrack = $state<Track | null>(null);
+  selectedSource = $state<Source | null>(null);
   alternatives = $state<Source[]>([]);
-  currentPlayUrl = $state<string | null>('https://mock.stream.naad/kesariya.flac');
+  currentPlayUrl = $state<string | null>(null);
   currentExpiresAt = $state<string | null>(null);
-  status = $state<'idle' | 'playing' | 'paused' | 'loading'>('paused');
-  currentTime = $state<number>(74.2);
-  duration = $state<number>(268.16);
-  buffered = $state<number>(140);
+  status = $state<'idle' | 'playing' | 'paused' | 'loading'>('idle');
+  currentTime = $state<number>(0);
+  duration = $state<number>(0);
+  buffered = $state<number>(0);
   volume = $state<number>(0.85);
   muted = $state<boolean>(false);
   repeat = $state<'off' | 'all' | 'one'>('off');
@@ -31,8 +30,8 @@ export class PlayerEngine {
   crossfadeSeconds = $state<number>(0);
   quality = $state<QualityTier>('max');
   normalizationEnabled = $state<boolean>(true);
-  queue = $state<Track[]>(tracks);
-  queueIndex = $state<number>(1);
+  queue = $state<Track[]>([]);
+  queueIndex = $state<number>(0);
   measuredGapMs = $state<number | null>(null);
 
   // UI state
@@ -44,7 +43,7 @@ export class PlayerEngine {
   private historyTracker: HistoryTracker;
   private mediaSession: MediaSessionController;
   private scheduler: Scheduler;
-  private unshuffledQueue: Track[] = [...tracks];
+  private unshuffledQueue: Track[] = [];
   private listenContext?: { type: string; id: string };
   private listenStartTime: number | null = null;
   private listenStartIso: string = formatIsoWithOffset();

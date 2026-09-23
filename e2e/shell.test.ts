@@ -45,8 +45,8 @@ test.describe('App Shell', () => {
     await expect(mobileNav.getByText('Home')).toBeVisible();
     await expect(mobileNav.getByText('Search')).toBeVisible();
 
-    // Mobile mini-player visible
+    // Mobile mini-player is hidden when no track is loaded
     const miniPlayer = page.locator('div[aria-label="Mini Player"]');
-    await expect(miniPlayer).toBeVisible();
+    await expect(miniPlayer).toBeHidden();
   });
 });
