@@ -107,7 +107,7 @@ function handleTouchEnd() {
     {#if showArtwork}
       <Artwork src={artwork} alt="" size={36} />
     {/if}
-    <div class="min-w-0">
+    <div class="min-w-0 flex-1">
       <p class="truncate font-medium leading-snug" class:text-accent={status !== 'idle'}>
         {track.title}
         {#if track.versionTags.includes('remix')}<span class="text-ink-faint font-normal"> · Remix</span>{/if}

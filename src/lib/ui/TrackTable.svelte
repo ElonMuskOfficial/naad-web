@@ -35,17 +35,11 @@ let {
 // like/menu/album/quality tracks don't exist at all, rather than existing at zero width, so a
 // narrow viewport never has to lay out columns it has nowhere to put — set via a real CSS media
 // query (arbitrary-property utility), not a value computed once in JS.
-const desktopGrid = $derived(
-  showAlbum
-    ? 'sm:[--track-row-grid:28px_minmax(0,1fr)_minmax(0,180px)_150px_20px_48px_20px]'
-    : 'sm:[--track-row-grid:28px_minmax(0,1fr)_150px_20px_48px_20px]',
-);
 </script>
 
-<div class="[--track-row-grid:28px_minmax(0,1fr)_44px_24px] {desktopGrid}">
+<div class="track-table {showAlbum ? 'has-album' : 'no-album'}">
   <div
-    class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint max-sm:hidden"
-    style:grid-template-columns="var(--track-row-grid)"
+    class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint max-sm:hidden track-table-grid"
   >
     <span class="text-right" data-numeric>#</span>
     <span>Title</span>
@@ -71,3 +65,20 @@ const desktopGrid = $derived(
     {/each}
   </div>
 </div>
+
+<style>
+  .track-table {
+    --track-row-grid: 28px minmax(0, 1fr) 44px 24px;
+  }
+  @media (min-width: 640px) {
+    .track-table.no-album {
+      --track-row-grid: 28px minmax(160px, 1fr) 140px 20px 48px 20px;
+    }
+    .track-table.has-album {
+      --track-row-grid: 28px minmax(160px, 1.5fr) minmax(110px, 1fr) 140px 20px 48px 20px;
+    }
+  }
+  .track-table-grid {
+    grid-template-columns: var(--track-row-grid);
+  }
+</style>

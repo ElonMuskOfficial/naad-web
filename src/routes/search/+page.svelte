@@ -297,7 +297,7 @@ function handleTopResultClick() {
             <TrackTable
               tracks={searchResults.tracks.slice(0, 5)}
               showArtwork={true}
-              showAlbum={true}
+              showAlbum={false}
               {likedIds}
               currentId={player.currentTrack?.id}
               playing={player.status === 'playing'}
