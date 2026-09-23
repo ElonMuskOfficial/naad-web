@@ -128,7 +128,11 @@ function handleScroll() {
     </div>
   {:else if validLines.length > 0}
     <!-- Synced Lyrics Stage with Word-by-Word Karaoke Highlighting -->
-    <div class="flex flex-col gap-6 max-w-2xl py-32">
+    <div class="flex flex-col gap-6 max-w-2xl py-24">
+      <div class="inline-flex items-center gap-2 py-1 px-2.5 rounded-xs border border-border/60 bg-surface-1/80 w-fit text-ink-muted mb-2">
+        <span class="size-1.5 rounded-full bg-accent animate-pulse" aria-hidden="true"></span>
+        <span class="font-mono text-2xs uppercase tracking-wider text-accent font-medium">Time-synced lyrics</span>
+      </div>
       {#each validLines as line, idx (line.timeMs)}
         {@const isActive = idx === activeIndex}
         {@const isPast = idx < activeIndex}
@@ -180,8 +184,12 @@ function handleScroll() {
     </div>
   {:else if lyricsQuery.data?.plain}
     <!-- Plain Static Lyrics Fallback -->
-    <div class="max-w-2xl py-12">
-      <p class="font-sans text-lg sm:text-xl text-ink leading-relaxed whitespace-pre-line">
+    <div class="max-w-2xl py-8 flex flex-col gap-6">
+      <div class="inline-flex items-center gap-2 py-1 px-2.5 rounded-xs border border-border/60 bg-surface-1/80 w-fit text-ink-muted">
+        <span class="size-1.5 rounded-full bg-ink-faint" aria-hidden="true"></span>
+        <span class="font-mono text-2xs uppercase tracking-wider text-ink-muted">Plain lyrics · Time sync unavailable for this track</span>
+      </div>
+      <p class="font-sans text-lg sm:text-xl text-ink/90 leading-relaxed whitespace-pre-line select-text">
         {lyricsQuery.data.plain}
       </p>
     </div>

@@ -51,7 +51,17 @@ export class AudioGraph {
 
     el.addEventListener('progress', () => {
       if (this.activeSlot === slot && el.buffered.length > 0) {
-        const bufferedEnd = el.buffered.end(el.buffered.length - 1);
+        let bufferedEnd = 0;
+        const cur = el.currentTime;
+        for (let i = 0; i < el.buffered.length; i++) {
+          if (cur >= el.buffered.start(i) - 0.5 && cur <= el.buffered.end(i)) {
+            bufferedEnd = el.buffered.end(i);
+            break;
+          }
+        }
+        if (bufferedEnd === 0 && el.buffered.start(0) <= 1.0) {
+          bufferedEnd = el.buffered.end(0);
+        }
         this.callbacks.onBuffered?.(bufferedEnd);
       }
     });
@@ -111,6 +121,7 @@ export class AudioGraph {
 
     this.cancelCrossfade();
     this.currentGainDb = gainDb ?? null;
+    this.callbacks.onBuffered?.(0);
     el.src = url;
     el.volume = calculateEffectiveVolume(this.userVolume, this.currentGainDb);
     if (startPosition > 0) {

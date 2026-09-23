@@ -152,6 +152,7 @@ export class PlayerEngine {
     this.currentExpiresAt = sourcesData.play.expiresAt;
     this.queueIndex = newIndex;
     this.currentTime = 0;
+    this.buffered = 0;
     this.duration = (track.durationMs ?? 0) / 1000;
     this.status = 'playing';
     this.retryCount = 0;
@@ -313,17 +314,40 @@ export class PlayerEngine {
 
     this.currentTrack = track;
     this.currentTime = 0;
+    this.buffered = 0;
     this.duration = (track.durationMs ?? 0) / 1000;
     this.status = 'loading';
     this.scheduler.clearPreload();
 
     try {
-      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+      let { data, error } = await api.GET('/v1/tracks/{id}/sources', {
         params: {
           path: { id: track.id },
           query: { quality: this.quality },
         },
       });
+
+      // If the engine returned a standard fallback source (e.g. YouTube materialize) while higher quality is requested,
+      // refresh once to check if a higher-tier provider (e.g. JioSaavn 320k) has since become available
+      if (
+        data?.selected &&
+        data.selected.provider === 'youtube' &&
+        (this.quality === 'max' || this.quality === 'high' || this.quality === 'lossless')
+      ) {
+        try {
+          const refreshed = await api.GET('/v1/tracks/{id}/sources', {
+            params: {
+              path: { id: track.id },
+              query: { quality: this.quality, refresh: 'true' },
+            },
+          });
+          if (refreshed.data?.selected && refreshed.data.selected.provider !== 'youtube') {
+            data = refreshed.data;
+          }
+        } catch {
+          // ignore and proceed with existing data
+        }
+      }
 
       if (error || !data || !data.play?.url) {
         throw error ?? new Error('No playable source found');
