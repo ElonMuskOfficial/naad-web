@@ -1,4 +1,5 @@
 <script lang="ts">
+import { goto } from '$app/navigation';
 import { joinArtists } from '$lib/format';
 import { player } from '$lib/player/engine.svelte';
 import { createHomeQuery } from '$lib/queries';
@@ -130,7 +131,7 @@ const homeQuery = createHomeQuery();
         description="Search for tracks and artists across Indian and global music, or import a playlist link to begin."
         action={{
           label: 'Search catalog',
-          onClick: () => (window.location.href = '/search'),
+          onClick: () => goto('/search'),
         }}
       />
     </div>

@@ -16,9 +16,8 @@ const rounded = $derived(radius === 'full' ? 'rounded-full' : 'rounded-sm');
 </script>
 
 <div
-  class="relative shrink-0 overflow-hidden {rounded} bg-surface-2 {className}"
-  style:width="{size}px"
-  style:height="{size}px"
+  class="artwork-root relative shrink-0 overflow-hidden {rounded} bg-surface-2 {className}"
+  style:--art-size="{size}px"
 >
   {#if proxiedSrc && !failed}
     <img
@@ -38,3 +37,10 @@ const rounded = $derived(radius === 'full' ? 'rounded-full' : 'rounded-sm');
     <span class="sr-only">{alt}</span>
   {/if}
 </div>
+
+<style>
+  .artwork-root {
+    width: var(--art-size);
+    height: var(--art-size);
+  }
+</style>

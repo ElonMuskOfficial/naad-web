@@ -166,7 +166,7 @@ function switchTab(tab: NowPlayingTab) {
     <div class="flex flex-col lg:flex-row flex-1 min-w-0 h-full max-w-7xl mx-auto w-full px-4 sm:px-8 py-4 sm:py-6 gap-6 lg:gap-12">
       <!-- Left Column: Artwork, Sleeve Typography, and Full Transport Controls -->
       <section
-        class="flex flex-col justify-center items-center lg:items-start shrink-0 lg:w-[420px] max-lg:max-w-md max-lg:mx-auto w-full gap-5 overflow-y-auto"
+        class="now-playing-left flex flex-col items-center lg:items-start shrink-0 lg:w-[400px] xl:w-[420px] max-lg:max-w-md max-lg:mx-auto w-full gap-2.5 sm:gap-3 overflow-y-auto pr-3 sm:pr-4"
         class:max-lg:hidden={activeTab !== 'player'}
         aria-label="Current Track Details"
       >
@@ -175,14 +175,14 @@ function switchTab(tab: NowPlayingTab) {
           <Artwork
             src={currentArtwork}
             alt={player.currentTrack?.title ?? 'Now playing artwork'}
-            size={320}
-            class="size-[220px] sm:size-[320px] object-cover"
+            size={280}
+            class="size-[200px] sm:size-[240px] lg:size-[260px] xl:size-[280px] object-cover"
           />
         </div>
 
         <!-- Typography & Hierarchy: Fraunces Display Title + IBM Plex Sans Artists -->
         <div class="w-full text-center lg:text-left min-w-0">
-          <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl text-ink font-normal leading-snug line-clamp-2">
+          <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-snug break-words">
             {player.currentTrack?.title ?? 'No track playing'}
           </h1>
           <p class="text-sm text-ink-muted leading-tight truncate mt-1">
@@ -190,7 +190,7 @@ function switchTab(tab: NowPlayingTab) {
           </p>
 
           <!-- Quality Readout: Click switches directly to Signal path tab -->
-          <div class="mt-2.5 flex items-center justify-center lg:justify-start gap-2">
+          <div class="mt-2 flex items-center justify-center lg:justify-start gap-2">
             {#if player.selectedSource}
               <QualityBadge
                 source={player.selectedSource}
@@ -268,7 +268,7 @@ function switchTab(tab: NowPlayingTab) {
         </div>
 
         <!-- Volume Control Slider -->
-        <div class="flex items-center gap-2 w-full pt-1 mb-auto lg:mb-0">
+        <div class="flex items-center gap-2 w-full max-w-sm pt-1 mb-auto lg:mb-0">
           <button
             type="button"
             onclick={() => player.toggleMute()}
@@ -436,3 +436,9 @@ function switchTab(tab: NowPlayingTab) {
     </div>
   </main>
 </div>
+
+<style>
+  .now-playing-left {
+    justify-content: safe center;
+  }
+</style>

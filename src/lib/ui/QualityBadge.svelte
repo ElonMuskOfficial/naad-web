@@ -1,4 +1,5 @@
 <script lang="ts">
+import { goto } from '$app/navigation';
 import { describeQuality, type Tier } from '$lib/format';
 
 interface Props {
@@ -30,7 +31,7 @@ const dot = $derived(info.tier === 'hires' ? 'bg-accent' : 'bg-ink-faint');
 {#if interactive}
   <button
     type="button"
-    onclick={onclick ?? (() => (window.location.href = '/now-playing?tab=signal'))}
+    onclick={onclick ?? (() => goto('/now-playing?tab=signal'))}
     class="inline-flex items-center gap-1.5 border-b border-transparent text-ink-muted hover:border-border-strong hover:text-ink transition-colors duration-[var(--duration-fast)]"
     aria-label="Playback quality: {info.detail}. View signal path."
   >
