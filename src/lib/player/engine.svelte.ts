@@ -525,47 +525,15 @@ export class PlayerEngine {
     return this.queueIndex > 0;
   }
 
-  private get isChunkedFmp4Stream(): boolean {
-    return this.selectedSource?.provider === 'tidal' && this.selectedSource?.delivery === 'proxy';
-  }
-
   seek(seconds: number) {
     const target = Math.max(0, Math.min(seconds, this.duration));
     this.currentTime = target;
-    if (!this.isChunkedFmp4Stream) {
-      // For standard byte-range streams (Arcod, JioSaavn, Qobuz, etc.), audio element seeks natively.
-      this.audioGraph.seek(target);
-    }
-    // For Tidal chunked fMP4 streams we only update the UI position here.
-    // The actual stream reload happens in commitSeek(), called on scrub-end.
+    this.audioGraph.seek(target);
     this.mediaSession.setPositionState(this.duration, target);
   }
 
-  /**
-   * Commits a seek — should be called when the user releases the scrubber.
-   * For Tidal chunked fMP4 streams this reloads the stream URL with `?t=<seconds>`,
-   * causing the backend to start pumping from the nearest segment boundary.
-   * For standard byte-range streams (Arcod proxy, redirect, materialize) native seek is applied.
-   */
   commitSeek(seconds: number) {
-    const target = Math.max(0, Math.min(seconds, this.duration));
-    this.currentTime = target;
-    this.mediaSession.setPositionState(this.duration, target);
-
-    if (this.isChunkedFmp4Stream && this.currentPlayUrl) {
-      // Strip any existing ?t= / ?offset= before appending the new one
-      const baseUrl = this.currentPlayUrl.replace(/[?&](t|offset)=[^&]*/g, '').replace(/[?&]$/, '');
-      const sep = baseUrl.includes('?') ? '&' : '?';
-      const seekUrl = `${baseUrl}${sep}t=${Math.floor(target)}`;
-
-      const gainDb = this.normalizationEnabled ? this.selectedSource?.normalization?.gainDb : null;
-      // loadAndPlay resets the element src — browser will auto-position via fMP4 tfdt decodeTime.
-      this.audioGraph.loadAndPlay(seekUrl, gainDb, 0).catch((err) => {
-        console.warn('[PlayerEngine] commitSeek reload failed:', err);
-      });
-    } else {
-      this.audioGraph.seek(target);
-    }
+    this.seek(seconds);
   }
 
   setVolume(vol: number) {
