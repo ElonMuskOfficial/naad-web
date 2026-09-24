@@ -27,10 +27,24 @@ export class AudioGraph {
   constructor(callbacks: AudioGraphCallbacks = {}) {
     this.callbacks = callbacks;
     if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
+      const globalWindow = window as unknown as { __naad_audio_graph__?: AudioGraph };
+      if (globalWindow.__naad_audio_graph__) {
+        try {
+          globalWindow.__naad_audio_graph__.destroy();
+        } catch {}
+      }
+      globalWindow.__naad_audio_graph__ = this;
+
       this.elementA = new Audio();
       this.elementB = new Audio();
       this.setupElement(this.elementA, 'A');
       this.setupElement(this.elementB, 'B');
+
+      if (import.meta.hot) {
+        import.meta.hot.dispose(() => {
+          this.destroy();
+        });
+      }
     }
   }
 
@@ -120,6 +134,12 @@ export class AudioGraph {
     if (!el) return;
 
     this.cancelCrossfade();
+    // Ensure the idle element is stopped so no audio plays simultaneously
+    if (this.idleElement) {
+      this.idleElement.pause();
+      this.idleElement.removeAttribute('src');
+      this.idleElement.load();
+    }
     this.currentGainDb = gainDb ?? null;
     this.callbacks.onBuffered?.(0);
     el.src = url;
@@ -237,7 +257,9 @@ export class AudioGraph {
   }
 
   pause() {
-    this.activeElement?.pause();
+    this.cancelCrossfade();
+    this.elementA?.pause();
+    this.elementB?.pause();
   }
 
   seek(seconds: number) {

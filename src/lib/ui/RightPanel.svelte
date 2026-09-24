@@ -119,7 +119,7 @@ function onResizeStart(e: PointerEvent) {
     </div>
 
     <!-- Panel Body -->
-    <div class="flex-1 overflow-y-auto p-3 min-h-0">
+    <div class="flex-1 min-h-0 overflow-x-hidden {player.activeTab === 'queue' ? 'overflow-y-auto p-3' : 'overflow-hidden p-0'}">
       {#if player.activeTab === 'queue'}
         <!-- Up Next Content -->
         <div class="flex flex-col gap-4">
@@ -290,12 +290,13 @@ function onResizeStart(e: PointerEvent) {
         </div>
       {:else}
         <!-- Lyrics Content using dedicated LyricsStage component -->
-        <div class="h-full flex flex-col">
+        <div class="h-full flex flex-col min-h-0 overflow-hidden">
           {#if player.currentTrack}
             <LyricsStage
               trackId={player.currentTrack.id}
               currentTime={player.currentTime}
               onseek={(s) => player.seek(s)}
+              size="sm"
             />
           {:else}
             <div class="flex items-center justify-center h-full text-xs text-ink-muted">

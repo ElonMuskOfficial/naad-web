@@ -100,6 +100,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
       <IconButton
         label="Previous"
         size="md"
+        disabled={!player.hasPrevious}
         onclick={() => player.previous()}
       >
         <SkipPrevious />
@@ -121,6 +122,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
       <IconButton
         label="Next"
         size="md"
+        disabled={!player.hasNext}
         onclick={() => player.next()}
       >
         <SkipNext />

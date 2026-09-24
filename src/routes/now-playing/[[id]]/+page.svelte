@@ -6,7 +6,7 @@ import { extractAmbientPalette, type AmbientPalette } from '$lib/color/ambient';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Pause, Play, Repeat, Shuffle, SkipNext, SkipPrevious } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
-import { createLikedContainsQuery, createTrackQuery, toggleLikeTrack } from '$lib/queries';
+import { createAlbumQuery, createLikedContainsQuery, createTrackQuery, toggleLikeTrack } from '$lib/queries';
 import Artwork from '$lib/ui/Artwork.svelte';
 import IconButton from '$lib/ui/IconButton.svelte';
 import LyricsStage from '$lib/ui/LyricsStage.svelte';
@@ -30,20 +30,53 @@ let ambientPalette = $state<AmbientPalette>({
 
 const routeTrackId = $derived(page.params.id);
 const routeTrackQuery = createTrackQuery(() => routeTrackId ?? '');
+const albumId = $derived(routeTrackQuery.data?.album?.id ?? '');
+const albumQuery = createAlbumQuery(() => albumId);
+
+// Track which route ID we have already loaded so we don't reload or loop
+let loadedRouteId = $state<string | null>(null);
 
 // If route specified a track ID and it's not currently playing, load and play it
 $effect(() => {
-  if (routeTrackId && routeTrackQuery.data && player.currentTrack?.id !== routeTrackId) {
-    player.playTrack(routeTrackQuery.data, [routeTrackQuery.data]);
+  if (routeTrackId && routeTrackQuery.data && loadedRouteId !== routeTrackId) {
+    loadedRouteId = routeTrackId;
+    if (player.currentTrack?.id !== routeTrackId) {
+      const existingIdx = player.queue.findIndex((t) => t.id === routeTrackId);
+      if (existingIdx >= 0) {
+        player.playIndex(existingIdx);
+      } else {
+        player.playTrack(routeTrackQuery.data, [routeTrackQuery.data]);
+      }
+    }
   }
 });
 
-// Keep URL path in sync with currentTrack without triggering full page reloads
+// If the track loaded with only 1 song in queue, but has an album, populate the album queue
+$effect(() => {
+  if (
+    albumQuery.data?.tracks &&
+    albumQuery.data.tracks.length > 1 &&
+    player.queue.length <= 1 &&
+    player.currentTrack?.id === routeTrackId
+  ) {
+    const idx = albumQuery.data.tracks.findIndex((t) => t.id === routeTrackId);
+    if (idx >= 0) {
+      player.setQueue(albumQuery.data.tracks, idx);
+    }
+  }
+});
+
+// Keep URL path in sync with currentTrack without triggering full page reloads or loops
 $effect(() => {
   const currentId = player.currentTrack?.id;
   if (currentId && page.params.id !== currentId) {
-    const search = window.location.search;
-    window.history.replaceState({}, '', `/now-playing/${currentId}${search}`);
+    loadedRouteId = currentId;
+    const search = page.url.search;
+    goto(`/now-playing/${currentId}${search}`, {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
   }
 });
 
@@ -270,6 +303,7 @@ function handleClose() {
           <IconButton
             label="Previous"
             size="lg"
+            disabled={!player.hasPrevious}
             onclick={() => player.previous()}
           >
             <SkipPrevious size={22} />
@@ -291,6 +325,7 @@ function handleClose() {
           <IconButton
             label="Next"
             size="lg"
+            disabled={!player.hasNext}
             onclick={() => player.next()}
           >
             <SkipNext size={22} />
@@ -445,6 +480,7 @@ function handleClose() {
             <IconButton
               size="sm"
               label="Previous"
+              disabled={!player.hasPrevious}
               onclick={() => player.previous()}
             >
               <SkipPrevious size={18} />
@@ -466,6 +502,7 @@ function handleClose() {
             <IconButton
               size="sm"
               label="Next"
+              disabled={!player.hasNext}
               onclick={() => player.next()}
             >
               <SkipNext size={18} />

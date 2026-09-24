@@ -11,6 +11,9 @@ export const VOLUME_STORAGE_KEY = 'naad:volume';
 export const QUALITY_STORAGE_KEY = 'naad:quality';
 export const CROSSFADE_STORAGE_KEY = 'naad:crossfade';
 export const NORMALIZATION_STORAGE_KEY = 'naad:normalization';
+export const SESSION_TRACK_KEY = 'naad:current_track';
+export const SESSION_QUEUE_KEY = 'naad:queue';
+export const SESSION_QUEUE_INDEX_KEY = 'naad:queue_index';
 
 export class PlayerEngine {
   // Playback state (Svelte 5 runes)
@@ -56,6 +59,10 @@ export class PlayerEngine {
 
     this.audioGraph = new AudioGraph({
       onTimeUpdate: (time) => {
+        if (!this.currentTrack) {
+          this.audioGraph.pause();
+          return;
+        }
         this.currentTime = time;
         this.mediaSession.setPositionState(this.duration, time);
         this.scheduler.checkCrossfade(this.currentTrack, time, this.duration, this.crossfadeSeconds);
@@ -70,6 +77,10 @@ export class PlayerEngine {
         this.buffered = buf;
       },
       onPlaying: () => {
+        if (!this.currentTrack) {
+          this.audioGraph.pause();
+          return;
+        }
         this.status = 'playing';
         this.mediaSession.setPlaybackState('playing');
       },
@@ -157,6 +168,48 @@ export class PlayerEngine {
     if (savedNorm != null) {
       this.normalizationEnabled = savedNorm === 'true';
     }
+
+    try {
+      const savedTrackJson = localStorage.getItem(SESSION_TRACK_KEY);
+      if (savedTrackJson) {
+        const track = JSON.parse(savedTrackJson) as Track;
+        if (track && track.id && track.title) {
+          this.currentTrack = track;
+          this.duration = (track.durationMs ?? 0) / 1000;
+          this.status = 'paused';
+          const savedQueueJson = localStorage.getItem(SESSION_QUEUE_KEY);
+          if (savedQueueJson) {
+            const q = JSON.parse(savedQueueJson) as Track[];
+            if (Array.isArray(q) && q.length > 0) {
+              this.queue = q;
+              this.unshuffledQueue = [...q];
+            }
+          }
+          const savedIdx = localStorage.getItem(SESSION_QUEUE_INDEX_KEY);
+          if (savedIdx != null) {
+            const idx = Number.parseInt(savedIdx, 10);
+            if (!Number.isNaN(idx)) this.queueIndex = idx;
+          }
+          this.mediaSession.setMetadata(track);
+          this.mediaSession.setPlaybackState('paused');
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  private saveSession() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      if (this.currentTrack) {
+        localStorage.setItem(SESSION_TRACK_KEY, JSON.stringify(this.currentTrack));
+        localStorage.setItem(SESSION_QUEUE_KEY, JSON.stringify(this.queue.slice(0, 100)));
+        localStorage.setItem(SESSION_QUEUE_INDEX_KEY, String(this.queueIndex));
+      }
+    } catch {
+      // ignore storage errors
+    }
   }
 
   private applyTrackTransition(track: Track, sourcesData: ResolvedSources, newIndex: number) {
@@ -180,6 +233,7 @@ export class PlayerEngine {
 
     this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
     this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.saveSession();
   }
 
   private async handleTrackEnded() {
@@ -386,6 +440,7 @@ export class PlayerEngine {
 
       this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
       this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+      this.saveSession();
     } catch (err) {
       console.warn('[PlayerEngine] playTrack resolution error:', err);
       toast.push(`Couldn't play "${track.title}"`, { tone: 'danger' });
@@ -437,6 +492,19 @@ export class PlayerEngine {
     } else {
       this.seek(0);
     }
+  }
+
+  get hasNext(): boolean {
+    if (this.queue.length <= 1) return false;
+    if (this.repeat !== 'off') return true;
+    return this.queueIndex < this.queue.length - 1;
+  }
+
+  get hasPrevious(): boolean {
+    if (this.currentTime > 3) return true;
+    if (this.queue.length <= 1) return false;
+    if (this.repeat !== 'off') return true;
+    return this.queueIndex > 0;
   }
 
   seek(seconds: number) {
@@ -621,6 +689,16 @@ export class PlayerEngine {
     this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
     this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
     toast.push('Cleared upcoming queue');
+  }
+
+  setQueue(newQueue: Track[], index = 0) {
+    if (!newQueue || newQueue.length === 0) return;
+    this.unshuffledQueue = [...newQueue];
+    this.queue = [...newQueue];
+    this.queueIndex = Math.max(0, Math.min(newQueue.length - 1, index));
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
+    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.saveSession();
   }
 }
 

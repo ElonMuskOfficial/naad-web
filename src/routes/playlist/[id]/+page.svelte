@@ -43,7 +43,7 @@ $effect(() => {
   }
 });
 
-const isUserPlaylist = $derived(playlistQuery.data?.origin === 'user');
+const isEditablePlaylist = $derived(playlistQuery.data?.origin === 'user' || playlistQuery.data?.origin === 'import');
 
 // Inline editing state
 let isEditing = $state(false);
@@ -64,11 +64,11 @@ const likedIds = $derived(likedQuery.data ?? new Set<string>());
 
 const totalDurationMs = $derived(items.reduce((acc, it) => acc + (it.track.durationMs ?? 0), 0));
 
-// Cover artwork: playlist images or first track's image
+// Cover artwork: playlist images or first available track/album image
 const coverArtwork = $derived(
   playlistQuery.data?.images?.[0]?.url ??
-    items[0]?.track?.images?.[0]?.url ??
-    items[0]?.track?.album?.images?.[0]?.url,
+    items.find((it) => it.track?.images?.[0]?.url || it.track?.album?.images?.[0]?.url)?.track?.images?.[0]?.url ??
+    items.find((it) => it.track?.album?.images?.[0]?.url)?.track?.album?.images?.[0]?.url,
 );
 
 function playAll() {
@@ -252,7 +252,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
 
       <div class="flex flex-col items-center sm:items-start min-w-0 flex-1 text-center sm:text-left">
         <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
-          Playlist · {pl.origin === 'user' ? 'Library' : pl.origin}
+          Playlist · {pl.origin === 'user' ? 'Library' : pl.origin === 'import' ? 'Imported' : pl.origin}
         </span>
 
         {#if isEditing}
@@ -276,10 +276,10 @@ async function executeMove(fromIndex: number, toIndex: number) {
           </div>
         {:else}
           <div class="flex items-center gap-3 mt-1 mb-2 max-w-full">
-            <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl text-ink font-normal leading-tight truncate">
+            <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-tight break-words">
               {pl.title}
             </h1>
-            {#if isUserPlaylist}
+            {#if isEditablePlaylist}
               <button
                 type="button"
                 onclick={() => (isEditing = true)}
@@ -317,7 +317,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
             </Button>
           {/if}
 
-          {#if isUserPlaylist}
+          {#if isEditablePlaylist}
             <Button variant="ghost" onclick={deletePlaylist} title="Delete playlist">
               <Trash size={16} weight="light" class="text-danger" />
               <span class="text-danger">Delete</span>
@@ -454,7 +454,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
                 >
                   <ArrowDown size={14} weight="bold" />
                 </button>
-                {#if isUserPlaylist}
+                {#if isEditablePlaylist}
                   <button
                     type="button"
                     onclick={() => removeItem(item.itemId, item.track.title)}

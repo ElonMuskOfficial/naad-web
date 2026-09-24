@@ -59,12 +59,13 @@ function handleReset() {
   submitError = null;
 }
 
+const isResolving = $derived(!currentImport?.total || currentImport.total === 0);
 const progressPercent = $derived.by(() => {
   if (!currentImport) return 0;
   if (currentImport.status === 'completed') return 100;
-  if (!currentImport.total || currentImport.total === 0) return 10;
+  if (!currentImport.total || currentImport.total === 0) return 0;
   const matched = currentImport.matched ?? 0;
-  return Math.min(95, Math.round((matched / currentImport.total) * 100));
+  return Math.min(99, Math.round((matched / currentImport.total) * 100));
 });
 </script>
 
@@ -176,23 +177,37 @@ const progressPercent = $derived.by(() => {
       <!-- Progress Section -->
       <div class="space-y-2">
         <div class="flex items-center justify-between text-xs font-mono">
-          <span class="text-ink-muted">Resolution Progress</span>
+          <span class="text-ink-muted">
+            {#if isResolving && currentImport?.status !== 'failed'}
+              Fetching playlist details...
+            {:else}
+              Resolution Progress
+            {/if}
+          </span>
           <span class="text-ink" data-numeric>{progressPercent}%</span>
         </div>
 
         <!-- Progress bar hairline -->
         <div class="h-1.5 w-full overflow-hidden rounded-xs bg-surface-3">
-          <div
-            class="h-full bg-accent transition-all duration-300"
-            style:width="{progressPercent}%"
-          ></div>
+          {#if isResolving && currentImport?.status !== 'failed'}
+            <div class="h-full w-1/3 bg-accent/60 rounded-xs animate-pulse"></div>
+          {:else}
+            <div
+              class="h-full bg-accent transition-all duration-300"
+              style:width="{progressPercent}%"
+            ></div>
+          {/if}
         </div>
 
         <div class="flex items-center justify-between text-2xs font-mono text-ink-faint pt-1">
           <span>
-            Matched: <strong class="text-ink font-semibold">{currentImport?.matched ?? 0}</strong>
-            {#if currentImport?.total}
-              / {currentImport.total} tracks
+            {#if isResolving && currentImport?.status !== 'failed'}
+              <span>Connecting to source service...</span>
+            {:else}
+              Matched: <strong class="text-ink font-semibold">{currentImport?.matched ?? 0}</strong>
+              {#if currentImport?.total}
+                / {currentImport.total} tracks
+              {/if}
             {/if}
           </span>
           {#if currentImport?.unmatched && currentImport.unmatched.length > 0}

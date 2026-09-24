@@ -28,21 +28,7 @@ $effect(() => {
   }
 });
 
-function handleWheel(e: WheelEvent) {
-  if (!scrollerEl) return;
-  // If user is scrolling vertically over horizontal shelf, convert to horizontal scroll smoothly
-  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
-    const maxScroll = scrollerEl.scrollWidth - scrollerEl.clientWidth;
-    const isAtStart = scrollerEl.scrollLeft <= 0;
-    const isAtEnd = scrollerEl.scrollLeft >= maxScroll;
 
-    if ((e.deltaY > 0 && !isAtEnd) || (e.deltaY < 0 && !isAtStart)) {
-      e.preventDefault();
-      scrollerEl.scrollLeft += e.deltaY;
-      updateScrollButtons();
-    }
-  }
-}
 
 function scrollByAmount(direction: -1 | 1) {
   if (!scrollerEl) return;
@@ -122,7 +108,6 @@ function handleClickCapture(e: MouseEvent) {
   <div
     bind:this={scrollerEl}
     onscroll={updateScrollButtons}
-    onwheel={handleWheel}
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
