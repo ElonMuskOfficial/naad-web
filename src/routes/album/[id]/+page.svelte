@@ -139,7 +139,7 @@ function toggleSave() {
           {album.albumType ? album.albumType.toUpperCase() : 'ALBUM'}
         </span>
 
-        <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl text-ink font-normal leading-tight mt-1">
+        <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-tight mt-1 break-words">
           {album.title}
         </h1>
 

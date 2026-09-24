@@ -18,6 +18,19 @@ const MAX_WIDTH = 480;
 
 let panelWidth = $state(DEFAULT_WIDTH);
 let isResizing = $state(false);
+let showHistory = $state(false);
+
+const upcomingTracks = $derived(
+  !player.currentTrack
+    ? player.queue
+    : player.queueIndex >= 0
+      ? player.queue.slice(player.queueIndex + 1)
+      : [],
+);
+
+const previousTracks = $derived(
+  player.queue.length > 0 && player.queueIndex > 0 ? player.queue.slice(0, player.queueIndex) : [],
+);
 
 // Initialize width from localStorage on mount
 $effect(() => {
@@ -138,8 +151,8 @@ function onResizeStart(e: PointerEvent) {
             <div class="flex items-center justify-between pb-1">
               <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">Next in Queue</span>
               <div class="flex items-center gap-2">
-                <span class="font-mono text-2xs text-ink-faint" data-numeric>{player.queue.length} tracks</span>
-                {#if player.queue.length > 1}
+                <span class="font-mono text-2xs text-ink-faint" data-numeric>{upcomingTracks.length} {upcomingTracks.length === 1 ? 'track' : 'tracks'}</span>
+                {#if upcomingTracks.length > 0}
                   <button
                     type="button"
                     onclick={() => player.clearQueue()}
@@ -152,87 +165,128 @@ function onResizeStart(e: PointerEvent) {
             </div>
 
             <div class="mt-1 flex flex-col gap-1">
-              {#if player.queue.length === 0}
-                <div class="py-10 text-center text-xs text-ink-muted">
-                  Queue is empty
+              {#if upcomingTracks.length === 0}
+                <div class="py-8 text-center text-xs text-ink-muted">
+                  No upcoming tracks
                 </div>
               {:else}
-                {#each player.queue as track, idx (track.id + idx)}
-                  {@const isCurrent = idx === player.queueIndex}
-                <div
-                  class="group flex items-center justify-between gap-2 p-1.5 rounded-xs transition-colors duration-[var(--duration-fast)]
-                    {isCurrent ? 'bg-surface-2 border border-border' : 'hover:bg-surface-2'}"
-                >
-                  <button
-                    type="button"
-                    onclick={() => player.playIndex(idx)}
-                    class="flex items-center gap-2.5 min-w-0 flex-1 text-left"
+                {#each upcomingTracks as track, i (track.id + (player.queueIndex + 1 + i))}
+                  {@const queueIdx = player.currentTrack ? player.queueIndex + 1 + i : i}
+                  <div
+                    class="group flex items-center justify-between gap-2 p-1.5 rounded-xs transition-colors duration-[var(--duration-fast)] hover:bg-surface-2"
                   >
-                    <span class="font-mono text-2xs text-ink-faint w-4 text-center shrink-0" data-numeric>
-                      {#if isCurrent && player.status === 'playing'}
-                        <PlayingIndicator playing={true} />
-                      {:else}
-                        {idx + 1}
-                      {/if}
-                    </span>
-                    <Artwork
-                      src={track.images?.[0]?.url ?? track.album?.images?.[0]?.url}
-                      alt={track.title}
-                      size={32}
-                    />
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-xs {isCurrent ? 'text-accent font-medium' : 'text-ink'}">
-                        {track.title}
-                      </p>
-                      <p class="truncate text-2xs text-ink-muted">{joinArtists(track.artists.map((a) => a.name))}</p>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onclick={() => player.playIndex(queueIdx)}
+                      class="flex items-center gap-2.5 min-w-0 flex-1 text-left"
+                    >
+                      <span class="font-mono text-2xs text-ink-faint w-4 text-center shrink-0" data-numeric>
+                        {i + 1}
+                      </span>
+                      <Artwork
+                        src={track.images?.[0]?.url ?? track.album?.images?.[0]?.url}
+                        alt={track.title}
+                        size={32}
+                      />
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs text-ink">
+                          {track.title}
+                        </p>
+                        <p class="truncate text-2xs text-ink-muted">{joinArtists(track.artists.map((a) => a.name))}</p>
+                      </div>
+                    </button>
 
-                  <!-- Reorder & Remove Actions -->
-                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {#if idx > 0}
+                    <!-- Reorder & Remove Actions -->
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {#if i > 0}
+                        <button
+                          type="button"
+                          onclick={() => player.moveInQueue(queueIdx, queueIdx - 1)}
+                          class="p-0.5 text-ink-faint hover:text-ink transition-colors"
+                          title="Move up"
+                          aria-label="Move track up"
+                        >
+                          <ArrowUp size={12} weight="bold" />
+                        </button>
+                      {/if}
+                      {#if i < upcomingTracks.length - 1}
+                        <button
+                          type="button"
+                          onclick={() => player.moveInQueue(queueIdx, queueIdx + 1)}
+                          class="p-0.5 text-ink-faint hover:text-ink transition-colors"
+                          title="Move down"
+                          aria-label="Move track down"
+                        >
+                          <ArrowDown size={12} weight="bold" />
+                        </button>
+                      {/if}
                       <button
                         type="button"
-                        onclick={() => player.moveInQueue(idx, idx - 1)}
-                        class="p-0.5 text-ink-faint hover:text-ink transition-colors"
-                        title="Move up"
-                        aria-label="Move track up"
-                      >
-                        <ArrowUp size={12} weight="bold" />
-                      </button>
-                    {/if}
-                    {#if idx < player.queue.length - 1}
-                      <button
-                        type="button"
-                        onclick={() => player.moveInQueue(idx, idx + 1)}
-                        class="p-0.5 text-ink-faint hover:text-ink transition-colors"
-                        title="Move down"
-                        aria-label="Move track down"
-                      >
-                        <ArrowDown size={12} weight="bold" />
-                      </button>
-                    {/if}
-                    {#if !isCurrent}
-                      <button
-                        type="button"
-                        onclick={() => player.removeFromQueue(idx)}
+                        onclick={() => player.removeFromQueue(queueIdx)}
                         class="p-0.5 text-ink-faint hover:text-danger transition-colors ml-0.5"
                         title="Remove from queue"
                         aria-label="Remove track from queue"
                       >
                         <Trash size={12} weight="light" />
                       </button>
-                    {/if}
-                  </div>
+                    </div>
 
-                  <span class="font-mono text-2xs text-ink-faint shrink-0 group-hover:hidden" data-numeric>
-                    {formatDurationMs(track.durationMs)}
-                  </span>
-                </div>
-              {/each}
+                    <span class="font-mono text-2xs text-ink-faint shrink-0 group-hover:hidden" data-numeric>
+                      {formatDurationMs(track.durationMs)}
+                    </span>
+                  </div>
+                {/each}
               {/if}
             </div>
           </div>
+
+          <!-- Previously Played History (if any) -->
+          {#if previousTracks.length > 0}
+            <div class="pt-2 border-t border-border/40">
+              <button
+                type="button"
+                onclick={() => (showHistory = !showHistory)}
+                class="flex items-center justify-between w-full py-1 text-left group"
+              >
+                <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint group-hover:text-ink transition-colors">
+                  Previously Played ({previousTracks.length})
+                </span>
+                <span class="font-mono text-2xs text-ink-faint group-hover:text-ink transition-colors">
+                  {showHistory ? 'Hide' : 'Show'}
+                </span>
+              </button>
+
+              {#if showHistory}
+                <div class="mt-1 flex flex-col gap-1 opacity-70">
+                  {#each previousTracks as track, pIdx (track.id + pIdx)}
+                    <button
+                      type="button"
+                      onclick={() => player.playIndex(pIdx)}
+                      class="group flex items-center justify-between gap-2 p-1.5 rounded-xs hover:bg-surface-2 transition-colors text-left"
+                    >
+                      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span class="font-mono text-2xs text-ink-faint w-4 text-center shrink-0" data-numeric>
+                          {pIdx + 1}
+                        </span>
+                        <Artwork
+                          src={track.images?.[0]?.url ?? track.album?.images?.[0]?.url}
+                          alt={track.title}
+                          size={32}
+                        />
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate text-xs text-ink">{track.title}</p>
+                          <p class="truncate text-2xs text-ink-muted">{joinArtists(track.artists.map((a) => a.name))}</p>
+                        </div>
+                      </div>
+                      <span class="font-mono text-2xs text-ink-faint shrink-0" data-numeric>
+                        {formatDurationMs(track.durationMs)}
+                      </span>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
       {:else}
         <!-- Lyrics Content using dedicated LyricsStage component -->

@@ -595,9 +595,8 @@ export class PlayerEngine {
 
   clearQueue() {
     if (this.currentTrack) {
-      this.queue = [this.currentTrack];
-      this.unshuffledQueue = [this.currentTrack];
-      this.queueIndex = 0;
+      this.queue = this.queue.slice(0, this.queueIndex + 1);
+      this.unshuffledQueue = this.unshuffledQueue.filter((t) => this.queue.some((q) => q.id === t.id));
     } else {
       this.queue = [];
       this.unshuffledQueue = [];
