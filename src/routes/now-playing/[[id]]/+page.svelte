@@ -51,6 +51,27 @@ $effect(() => {
   }
 });
 
+// Sync server metadata (e.g. newly upgraded quality) into currentTrack
+$effect(() => {
+  if (routeTrackQuery.data && player.currentTrack?.id === routeTrackQuery.data.id) {
+    if (
+      routeTrackQuery.data.quality &&
+      (!player.currentTrack.quality ||
+        player.currentTrack.quality.tier !== routeTrackQuery.data.quality.tier ||
+        player.currentTrack.quality.provider !== routeTrackQuery.data.quality.provider)
+    ) {
+      player.currentTrack = { ...player.currentTrack, quality: routeTrackQuery.data.quality };
+    }
+  }
+});
+
+// If viewing the Signal path tab or current source is unresolved, resolve technical source
+$effect(() => {
+  if (activeTab === 'signal' && player.currentTrack && !player.selectedSource) {
+    void player.resolveSources(player.currentTrack.id);
+  }
+});
+
 // If the track loaded with only 1 song in queue, but has an album, populate the album queue
 $effect(() => {
   if (

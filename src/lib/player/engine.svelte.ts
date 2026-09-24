@@ -70,6 +70,9 @@ export class PlayerEngine {
       },
       onDurationChange: (dur) => {
         if (Number.isFinite(dur) && dur > 0) {
+          if (this.currentTrack?.durationMs && dur < this.currentTrack.durationMs / 1000 - 2) {
+            return;
+          }
           this.duration = dur;
         }
       },
@@ -428,6 +431,21 @@ export class PlayerEngine {
       this.currentPlayUrl = data.play.url;
       this.currentExpiresAt = data.play.expiresAt;
 
+      if (data.selected) {
+        this.currentTrack = {
+          ...track,
+          quality: {
+            tier: data.selected.tier,
+            codec: data.selected.codec,
+            bitDepth: data.selected.bitDepth,
+            sampleRate: data.selected.sampleRate,
+            bitrateKbps: data.selected.bitrateKbps,
+            provider: data.selected.provider,
+            verifiedAt: data.selected.verifiedAt,
+          },
+        };
+      }
+
       const gainDb = this.normalizationEnabled ? data.play.normalization?.gainDb : null;
       await this.audioGraph.loadAndPlay(data.play.url, gainDb, 0);
 
@@ -569,6 +587,41 @@ export class PlayerEngine {
     }
     this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
     this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+  }
+
+  async resolveSources(trackId?: string): Promise<Source | null> {
+    const targetId = trackId ?? this.currentTrack?.id;
+    if (!targetId) return null;
+    try {
+      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+        params: {
+          path: { id: targetId },
+          query: { quality: this.quality },
+        },
+      });
+      if (error || !data?.selected) return null;
+      if (this.currentTrack && this.currentTrack.id === targetId) {
+        this.selectedSource = data.selected;
+        this.alternatives = data.alternatives ?? [];
+        this.resolvedQualities[targetId] = data.selected;
+        this.currentTrack = {
+          ...this.currentTrack,
+          quality: {
+            tier: data.selected.tier,
+            codec: data.selected.codec,
+            bitDepth: data.selected.bitDepth,
+            sampleRate: data.selected.sampleRate,
+            bitrateKbps: data.selected.bitrateKbps,
+            provider: data.selected.provider,
+            verifiedAt: data.selected.verifiedAt,
+          },
+        };
+        this.saveSession();
+      }
+      return data.selected;
+    } catch {
+      return null;
+    }
   }
 
   setCrossfade(seconds: number) {
