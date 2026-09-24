@@ -74,6 +74,17 @@ describe('PlayerEngine', () => {
     expect(player.currentTime).toBe(200);
   });
 
+  it('commitSeek clamps within duration for non-proxy delivery', () => {
+    player.duration = 200;
+    // No selectedSource → non-proxy path
+    player.commitSeek(150);
+    expect(player.currentTime).toBe(150);
+    player.commitSeek(-5);
+    expect(player.currentTime).toBe(0);
+    player.commitSeek(999);
+    expect(player.currentTime).toBe(200);
+  });
+
   it('toggles right panel collapse', () => {
     player.rightPanelOpen = true;
     player.toggleRightPanel();

@@ -146,6 +146,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
         buffered={player.buffered}
         disabled={!player.currentTrack}
         onseek={(s) => player.seek(s)}
+        onscrubend={(s) => player.commitSeek(s)}
         size="sm"
         showTime={true}
       />

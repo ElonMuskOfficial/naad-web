@@ -305,6 +305,7 @@ function handleClose() {
             duration={player.duration}
             buffered={player.buffered}
             onseek={(s) => player.seek(s)}
+            onscrubend={(s) => player.commitSeek(s)}
             size="lg"
             showTime={true}
           />
@@ -412,7 +413,7 @@ function handleClose() {
               <LyricsStage
                 trackId={player.currentTrack.id}
                 currentTime={player.currentTime}
-                onseek={(s) => player.seek(s)}
+                onseek={(s) => player.commitSeek(s)}
               />
             {:else}
               <div class="flex items-center justify-center h-full w-full text-ink-muted text-sm">

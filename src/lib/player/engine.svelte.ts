@@ -528,8 +528,40 @@ export class PlayerEngine {
   seek(seconds: number) {
     const target = Math.max(0, Math.min(seconds, this.duration));
     this.currentTime = target;
-    this.audioGraph.seek(target);
+    if (this.selectedSource?.delivery !== 'proxy') {
+      // For redirect/materialize streams the audio element supports byte-range seeking natively.
+      this.audioGraph.seek(target);
+    }
+    // For proxy (fMP4 chunked) streams we only update the UI position here.
+    // The actual stream reload happens in commitSeek(), called on scrub-end.
     this.mediaSession.setPositionState(this.duration, target);
+  }
+
+  /**
+   * Commits a seek — should be called when the user releases the scrubber.
+   * For proxy (fMP4) streams this reloads the stream URL with `?t=<seconds>`,
+   * causing the backend to start pumping from the nearest segment boundary.
+   * For redirect/materialize streams a native seek is applied immediately.
+   */
+  commitSeek(seconds: number) {
+    const target = Math.max(0, Math.min(seconds, this.duration));
+    this.currentTime = target;
+    this.mediaSession.setPositionState(this.duration, target);
+
+    if (this.selectedSource?.delivery === 'proxy' && this.currentPlayUrl) {
+      // Strip any existing ?t= / ?offset= before appending the new one
+      const baseUrl = this.currentPlayUrl.replace(/[?&](t|offset)=[^&]*/g, '').replace(/[?&]$/, '');
+      const sep = baseUrl.includes('?') ? '&' : '?';
+      const seekUrl = `${baseUrl}${sep}t=${Math.floor(target)}`;
+
+      const gainDb = this.normalizationEnabled ? this.selectedSource.normalization?.gainDb : null;
+      // loadAndPlay resets the element src — browser will auto-position via fMP4 tfdt decodeTime.
+      this.audioGraph.loadAndPlay(seekUrl, gainDb, 0).catch((err) => {
+        console.warn('[PlayerEngine] commitSeek reload failed:', err);
+      });
+    } else {
+      this.audioGraph.seek(target);
+    }
   }
 
   setVolume(vol: number) {

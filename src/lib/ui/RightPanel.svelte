@@ -295,7 +295,7 @@ function onResizeStart(e: PointerEvent) {
             <LyricsStage
               trackId={player.currentTrack.id}
               currentTime={player.currentTime}
-              onseek={(s) => player.seek(s)}
+              onseek={(s) => player.commitSeek(s)}
               size="sm"
             />
           {:else}
