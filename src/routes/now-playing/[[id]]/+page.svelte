@@ -370,6 +370,7 @@ function handleClose() {
               <div class="flex flex-col gap-1">
                 {#each player.queue as track, idx (track.id ?? idx)}
                   {@const isCurrent = idx === player.queueIndex}
+                  {@const effectiveQuality = player.currentTrack?.id === track.id && player.selectedSource ? player.selectedSource : (player.resolvedQualities[track.id] ?? track.quality)}
                   <button
                     type="button"
                     onclick={() => player.playIndex(idx)}
@@ -400,8 +401,8 @@ function handleClose() {
                       </div>
                     </div>
                     <div class="flex items-center gap-3 pl-3 shrink-0">
-                      {#if track.quality}
-                        <QualityBadge source={track.quality} interactive={false} />
+                      {#if effectiveQuality}
+                        <QualityBadge source={effectiveQuality} interactive={false} />
                       {/if}
                       <span class="font-mono text-xs text-ink-muted" data-numeric>
                         {formatDurationMs(track.durationMs)}

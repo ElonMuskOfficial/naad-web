@@ -1,6 +1,6 @@
 import { api } from '$lib/api/client';
 import { toast } from '$lib/toast.svelte';
-import type { Source, Track } from '$lib/types';
+import type { Source, Track, TrackQuality } from '$lib/types';
 import { AudioGraph } from './audio-graph';
 import { HistoryTracker } from './history';
 import { formatIsoWithOffset, isTokenExpiringSoon, shuffleArray } from './math';
@@ -33,6 +33,7 @@ export class PlayerEngine {
   queue = $state<Track[]>([]);
   queueIndex = $state<number>(0);
   measuredGapMs = $state<number | null>(null);
+  resolvedQualities = $state<Record<string, Source | TrackQuality>>({});
 
   // UI state
   activeTab = $state<'queue' | 'lyrics'>('queue');
@@ -106,7 +107,15 @@ export class PlayerEngine {
     });
 
     this.scheduler = new Scheduler(this.audioGraph, {
+      onNextTrackReady: (track, sources) => {
+        if (sources.selected) {
+          this.resolvedQualities[track.id] = sources.selected;
+        }
+      },
       onTrackTransition: (track, sourcesData, newIndex) => {
+        if (sourcesData.selected) {
+          this.resolvedQualities[track.id] = sourcesData.selected;
+        }
         this.recordCurrentListen(true);
         this.applyTrackTransition(track, sourcesData, newIndex);
       },
@@ -114,6 +123,12 @@ export class PlayerEngine {
         this.recordCurrentListen(true);
         this.status = 'paused';
         this.mediaSession.setPlaybackState('paused');
+      },
+      onPrefetchDone: () => {
+        void import('$lib/queries').then(({ queryClient }) => {
+          queryClient.invalidateQueries({ queryKey: ['album'] });
+          queryClient.invalidateQueries({ queryKey: ['playlist'] });
+        });
       },
     });
   }
@@ -354,6 +369,7 @@ export class PlayerEngine {
       }
 
       this.selectedSource = data.selected;
+      this.resolvedQualities[track.id] = data.selected;
       this.alternatives = data.alternatives ?? [];
       this.currentPlayUrl = data.play.url;
       this.currentExpiresAt = data.play.expiresAt;

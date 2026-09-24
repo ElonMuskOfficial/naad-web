@@ -12,6 +12,7 @@ export interface SchedulerCallbacks {
   onNextTrackReady?: (track: Track, sources: ResolvedSources) => void;
   onTrackTransition?: (track: Track, sources: ResolvedSources, newIndex: number) => void;
   onEndOfQueue?: () => void;
+  onPrefetchDone?: (trackIds: string[]) => void;
 }
 
 export class Scheduler {
@@ -64,6 +65,7 @@ export class Scheduler {
             quality,
           },
         });
+        this.callbacks.onPrefetchDone?.(trackIds);
       } catch (err) {
         // Prefetch is an optimization; log and ignore network/rate errors
         console.debug('[Scheduler] Prefetch request completed/failed:', err);
