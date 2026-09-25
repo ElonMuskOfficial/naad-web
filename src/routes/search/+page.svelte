@@ -1,6 +1,6 @@
 <script lang="ts">
 import { page } from '$app/state';
-import { goto } from '$app/navigation';
+import { goto, replaceState } from '$app/navigation';
 import { bestImageUrl } from '$lib/art';
 import { createLikedContainsQuery, createSearchQuery, toggleLikeTrack, type SearchType } from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
@@ -34,7 +34,7 @@ function handleInput(e: Event) {
     } else {
       url.searchParams.delete('q');
     }
-    window.history.replaceState({}, '', url.toString());
+    replaceState(url.toString(), {});
   }, 250);
 }
 
@@ -44,7 +44,7 @@ function clearQuery() {
   clearTimeout(debounceTimer);
   const url = new URL(window.location.href);
   url.searchParams.delete('q');
-  window.history.replaceState({}, '', url.toString());
+  replaceState(url.toString(), {});
 }
 
 function setTab(tab: ActiveTab) {
@@ -55,7 +55,7 @@ function setTab(tab: ActiveTab) {
   } else {
     url.searchParams.delete('type');
   }
-  window.history.replaceState({}, '', url.toString());
+  replaceState(url.toString(), {});
 }
 
 const requestedTypes = $derived.by<SearchType[] | undefined>(() => {

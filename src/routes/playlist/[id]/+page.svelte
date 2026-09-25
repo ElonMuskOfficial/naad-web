@@ -43,7 +43,9 @@ $effect(() => {
   }
 });
 
-const isEditablePlaylist = $derived(playlistQuery.data?.origin === 'user' || playlistQuery.data?.origin === 'import');
+const isEditablePlaylist = $derived(
+  playlistQuery.data?.origin === 'user' || playlistQuery.data?.origin === 'import',
+);
 
 // Inline editing state
 let isEditing = $state(false);
@@ -67,7 +69,8 @@ const totalDurationMs = $derived(items.reduce((acc, it) => acc + (it.track.durat
 // Cover artwork: playlist images or first available track/album image
 const coverArtwork = $derived(
   playlistQuery.data?.images?.[0]?.url ??
-    items.find((it) => it.track?.images?.[0]?.url || it.track?.album?.images?.[0]?.url)?.track?.images?.[0]?.url ??
+    items.find((it) => it.track?.images?.[0]?.url || it.track?.album?.images?.[0]?.url)?.track?.images?.[0]
+      ?.url ??
     items.find((it) => it.track?.album?.images?.[0]?.url)?.track?.album?.images?.[0]?.url,
 );
 

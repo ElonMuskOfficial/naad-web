@@ -64,6 +64,9 @@ export function artUrl(src?: string | null, size?: number): string | undefined {
     return src;
   }
   const upgradedSrc = upgradeImageUrl(src, size ? Math.max(size, 400) : 600) ?? src;
+  if (upgradedSrc.includes('saavncdn.com')) {
+    return upgradedSrc;
+  }
   const params = new URLSearchParams();
   params.set('src', upgradedSrc);
   if (size && size > 0) {

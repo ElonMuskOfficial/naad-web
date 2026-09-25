@@ -28,8 +28,6 @@ $effect(() => {
   }
 });
 
-
-
 function scrollByAmount(direction: -1 | 1) {
   if (!scrollerEl) return;
   const cardWidth = 320;
