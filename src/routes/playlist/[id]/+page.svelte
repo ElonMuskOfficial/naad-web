@@ -95,7 +95,8 @@ async function saveMetadata() {
   try {
     await api.PATCH('/v1/playlists/{id}', {
       params: { path: { id: playlistId } },
-      body: { title: editTitle.trim(), description: editDescription.trim() || undefined },
+      // an empty description is sent as '' so that it clears the old one (undefined would leave it alone)
+      body: { title: editTitle.trim(), description: editDescription.trim() },
     });
     isEditing = false;
     queryClient.invalidateQueries({ queryKey: ['playlist', playlistId] });
@@ -359,7 +360,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
             {@const isOver = dragOverIndex === idx}
 
             <div
-              draggable="true"
+              draggable={isEditablePlaylist}
               role="listitem"
               ondragstart={(e) => handleDragStart(idx, e)}
               ondragover={(e) => handleDragOver(idx, e)}
@@ -437,6 +438,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
 
               <!-- Actions: Keyboard Move Up/Down + Remove Item -->
               <div class="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100">
+                {#if isEditablePlaylist}
                 <button
                   type="button"
                   onclick={() => moveUp(idx)}
@@ -457,7 +459,6 @@ async function executeMove(fromIndex: number, toIndex: number) {
                 >
                   <ArrowDown size={14} weight="bold" />
                 </button>
-                {#if isEditablePlaylist}
                   <button
                     type="button"
                     onclick={() => removeItem(item.itemId, item.track.title)}

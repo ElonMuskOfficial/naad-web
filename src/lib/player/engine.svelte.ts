@@ -5,12 +5,11 @@ import { AudioGraph } from './audio-graph';
 import { HistoryTracker } from './history';
 import { formatIsoWithOffset, isTokenExpiringSoon, shuffleArray } from './math';
 import { MediaSessionController } from './media-session';
-import { type QualityTier, type ResolvedSources, Scheduler } from './scheduler';
+import { type ResolvedSources, Scheduler } from './scheduler';
+import { migrateSession } from './session-version';
 
 export const VOLUME_STORAGE_KEY = 'naad:volume';
-export const QUALITY_STORAGE_KEY = 'naad:quality';
 export const CROSSFADE_STORAGE_KEY = 'naad:crossfade';
-export const NORMALIZATION_STORAGE_KEY = 'naad:normalization';
 export const SESSION_TRACK_KEY = 'naad:current_track';
 export const SESSION_QUEUE_KEY = 'naad:queue';
 export const SESSION_QUEUE_INDEX_KEY = 'naad:queue_index';
@@ -31,8 +30,6 @@ export class PlayerEngine {
   repeat = $state<'off' | 'all' | 'one'>('off');
   shuffle = $state<boolean>(false);
   crossfadeSeconds = $state<number>(0);
-  quality = $state<QualityTier>('max');
-  normalizationEnabled = $state<boolean>(true);
   queue = $state<Track[]>([]);
   queueIndex = $state<number>(0);
   measuredGapMs = $state<number | null>(null);
@@ -138,17 +135,14 @@ export class PlayerEngine {
         this.status = 'paused';
         this.mediaSession.setPlaybackState('paused');
       },
-      onPrefetchDone: () => {
-        void import('$lib/queries').then(({ queryClient }) => {
-          queryClient.invalidateQueries({ queryKey: ['album'] });
-          queryClient.invalidateQueries({ queryKey: ['playlist'] });
-        });
-      },
     });
   }
 
   private readStoredSettings() {
     if (typeof localStorage === 'undefined') return;
+
+    // A session saved under another engine holds ids that do not exist here: drop it once.
+    migrateSession(localStorage, [SESSION_TRACK_KEY, SESSION_QUEUE_KEY, SESSION_QUEUE_INDEX_KEY]);
 
     const savedVol = localStorage.getItem(VOLUME_STORAGE_KEY);
     if (savedVol != null) {
@@ -156,20 +150,10 @@ export class PlayerEngine {
       if (!Number.isNaN(v)) this.volume = Math.max(0, Math.min(1, v));
     }
 
-    const savedQual = localStorage.getItem(QUALITY_STORAGE_KEY) as QualityTier | null;
-    if (savedQual && ['max', 'hires', 'lossless', 'high', 'standard'].includes(savedQual)) {
-      this.quality = savedQual;
-    }
-
     const savedCrossfade = localStorage.getItem(CROSSFADE_STORAGE_KEY);
     if (savedCrossfade != null) {
       const c = Number.parseFloat(savedCrossfade);
       if (!Number.isNaN(c)) this.crossfadeSeconds = Math.max(0, Math.min(12, c));
-    }
-
-    const savedNorm = localStorage.getItem(NORMALIZATION_STORAGE_KEY);
-    if (savedNorm != null) {
-      this.normalizationEnabled = savedNorm === 'true';
     }
 
     try {
@@ -234,8 +218,8 @@ export class PlayerEngine {
     this.mediaSession.setMetadata(track);
     this.mediaSession.setPlaybackState('playing');
 
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
     this.saveSession();
   }
 
@@ -268,7 +252,7 @@ export class PlayerEngine {
         const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
           params: {
             path: { id: this.currentTrack.id },
-            query: { quality: this.quality, refresh: 'true' },
+            query: { refresh: 'true' },
           },
         });
 
@@ -279,8 +263,7 @@ export class PlayerEngine {
         this.selectedSource = data.selected;
         this.currentPlayUrl = data.play.url;
         this.currentExpiresAt = data.play.expiresAt;
-        const gainDb = this.normalizationEnabled ? data.play.normalization?.gainDb : null;
-        await this.audioGraph.loadAndPlay(data.play.url, gainDb, savedPos);
+        await this.audioGraph.loadAndPlay(data.play.url, null, savedPos);
         return;
       } catch (refreshErr) {
         console.warn('[PlayerEngine] Recovery with refresh token failed:', refreshErr);
@@ -306,7 +289,7 @@ export class PlayerEngine {
       const { data } = await api.GET('/v1/tracks/{id}/sources', {
         params: {
           path: { id: this.currentTrack.id },
-          query: { quality: this.quality, refresh: 'true' },
+          query: { refresh: 'true' },
         },
       });
 
@@ -392,34 +375,11 @@ export class PlayerEngine {
     this.scheduler.clearPreload();
 
     try {
-      let { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
         params: {
           path: { id: track.id },
-          query: { quality: this.quality },
         },
       });
-
-      // If the engine returned a standard fallback source (e.g. YouTube materialize) while higher quality is requested,
-      // refresh once to check if a higher-tier provider (e.g. JioSaavn 320k) has since become available
-      if (
-        data?.selected &&
-        data.selected.provider === 'youtube' &&
-        (this.quality === 'max' || this.quality === 'high' || this.quality === 'lossless')
-      ) {
-        try {
-          const refreshed = await api.GET('/v1/tracks/{id}/sources', {
-            params: {
-              path: { id: track.id },
-              query: { quality: this.quality, refresh: 'true' },
-            },
-          });
-          if (refreshed.data?.selected && refreshed.data.selected.provider !== 'youtube') {
-            data = refreshed.data;
-          }
-        } catch {
-          // ignore and proceed with existing data
-        }
-      }
 
       if (error || !data || !data.play?.url) {
         throw error ?? new Error('No playable source found');
@@ -445,9 +405,7 @@ export class PlayerEngine {
           },
         };
       }
-
-      const gainDb = this.normalizationEnabled ? data.play.normalization?.gainDb : null;
-      await this.audioGraph.loadAndPlay(data.play.url, gainDb, 0);
+      await this.audioGraph.loadAndPlay(data.play.url, null, 0);
 
       this.status = 'playing';
       this.listenStartTime = Date.now();
@@ -456,8 +414,8 @@ export class PlayerEngine {
       this.mediaSession.setMetadata(track);
       this.mediaSession.setPlaybackState('playing');
 
-      this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-      this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+      this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+      this.scheduler.queueChanged(this.queue, this.queueIndex);
       this.saveSession();
     } catch (err) {
       console.warn('[PlayerEngine] playTrack resolution error:', err);
@@ -487,6 +445,8 @@ export class PlayerEngine {
     if (nextIdx >= 0 && nextIdx < this.queue.length) {
       const preloaded = this.scheduler.preloadedTrackInfo;
       if (preloaded && preloaded.index === nextIdx) {
+        // playTrack() records what it leaves; this path swaps tracks without it, so the skipped listen was lost.
+        this.recordCurrentListen(false);
         await this.audioGraph.swapToPreloaded();
         this.applyTrackTransition(preloaded.track, preloaded.sources, nextIdx);
       } else {
@@ -541,8 +501,7 @@ export class PlayerEngine {
     if (this.volume > 0 && this.muted) {
       this.muted = false;
     }
-    const gainDb = this.normalizationEnabled ? this.selectedSource?.normalization?.gainDb : null;
-    this.audioGraph.setVolume(this.muted ? 0 : this.volume, gainDb);
+    this.audioGraph.setVolume(this.muted ? 0 : this.volume);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(VOLUME_STORAGE_KEY, String(this.volume));
     }
@@ -550,15 +509,14 @@ export class PlayerEngine {
 
   toggleMute() {
     this.muted = !this.muted;
-    const gainDb = this.normalizationEnabled ? this.selectedSource?.normalization?.gainDb : null;
-    this.audioGraph.setVolume(this.muted ? 0 : this.volume, gainDb);
+    this.audioGraph.setVolume(this.muted ? 0 : this.volume);
   }
 
   toggleRepeat() {
     if (this.repeat === 'off') this.repeat = 'all';
     else if (this.repeat === 'all') this.repeat = 'one';
     else this.repeat = 'off';
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
   }
 
   toggleShuffle() {
@@ -580,17 +538,8 @@ export class PlayerEngine {
         this.queueIndex = idx >= 0 ? idx : 0;
       }
     }
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
-  }
-
-  setQuality(quality: QualityTier) {
-    this.quality = quality;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(QUALITY_STORAGE_KEY, quality);
-    }
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
   }
 
   async resolveSources(trackId?: string): Promise<Source | null> {
@@ -600,7 +549,6 @@ export class PlayerEngine {
       const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
         params: {
           path: { id: targetId },
-          query: { quality: this.quality },
         },
       });
       if (error || !data?.selected) return null;
@@ -635,15 +583,6 @@ export class PlayerEngine {
     }
   }
 
-  setNormalization(enabled: boolean) {
-    this.normalizationEnabled = enabled;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(NORMALIZATION_STORAGE_KEY, String(enabled));
-    }
-    const gainDb = this.normalizationEnabled ? this.selectedSource?.normalization?.gainDb : null;
-    this.audioGraph.setVolume(this.muted ? 0 : this.volume, gainDb);
-  }
-
   toggleRightPanel() {
     this.rightPanelOpen = !this.rightPanelOpen;
   }
@@ -676,8 +615,8 @@ export class PlayerEngine {
   addToQueue(track: Track) {
     this.queue = [...this.queue, track];
     this.unshuffledQueue = [...this.unshuffledQueue, track];
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
     toast.push(`Added "${track.title}" to queue`);
   }
 
@@ -687,8 +626,8 @@ export class PlayerEngine {
     newQueue.splice(nextIdx, 0, track);
     this.queue = newQueue;
     this.unshuffledQueue.push(track);
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
     toast.push(`Will play "${track.title}" next`);
   }
 
@@ -701,8 +640,8 @@ export class PlayerEngine {
     }
     this.queue = newQueue;
     this.unshuffledQueue = this.unshuffledQueue.filter((t) => t.id !== track?.id);
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
   }
 
   moveInQueue(fromIndex: number, toIndex: number) {
@@ -730,8 +669,8 @@ export class PlayerEngine {
     }
 
     this.queue = newQueue;
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
   }
 
   clearQueue() {
@@ -743,8 +682,8 @@ export class PlayerEngine {
       this.unshuffledQueue = [];
       this.queueIndex = 0;
     }
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
     toast.push('Cleared upcoming queue');
   }
 
@@ -753,8 +692,8 @@ export class PlayerEngine {
     this.unshuffledQueue = [...newQueue];
     this.queue = [...newQueue];
     this.queueIndex = Math.max(0, Math.min(newQueue.length - 1, index));
-    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat, this.quality);
-    this.scheduler.queueChanged(this.queue, this.queueIndex, this.quality);
+    this.scheduler.prepareNextTrack(this.queue, this.queueIndex, this.repeat);
+    this.scheduler.queueChanged(this.queue, this.queueIndex);
     this.saveSession();
   }
 }

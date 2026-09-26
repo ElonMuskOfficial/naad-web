@@ -42,13 +42,6 @@ export const COMMAND_ACTIONS: CommandAction[] = [
     perform: ({ goto }) => goto('/library'),
   },
   {
-    id: 'nav-import',
-    title: 'Import Playlist (Spotify, Apple, YouTube)',
-    category: 'Navigation',
-    keywords: ['transfer', 'convert', 'link', 'migrate'],
-    perform: ({ goto }) => goto('/import'),
-  },
-  {
     id: 'nav-settings',
     title: 'Open Settings',
     category: 'Navigation',

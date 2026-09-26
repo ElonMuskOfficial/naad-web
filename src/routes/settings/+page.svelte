@@ -11,50 +11,21 @@ import {
   setStoredApiKey,
   setStoredEngineUrl,
 } from '$lib/api/client';
-import {
-  CROSSFADE_STORAGE_KEY,
-  NORMALIZATION_STORAGE_KEY,
-  player,
-  QUALITY_STORAGE_KEY,
-} from '$lib/player/engine.svelte';
-import type { QualityTier } from '$lib/player/scheduler';
+import { CROSSFADE_STORAGE_KEY, player } from '$lib/player/engine.svelte';
 import { theme } from '$lib/theme.svelte';
 import { toast } from '$lib/toast.svelte';
 import Button from '$lib/ui/Button.svelte';
-
-export const QUALITY_WIFI_KEY = QUALITY_STORAGE_KEY;
-export const QUALITY_CELLULAR_KEY = 'naad:quality:cellular';
 
 // Stored settings
 let apiKey = $state(getStoredApiKey() ?? '');
 let showApiKey = $state(false);
 let engineUrl = $state(getStoredEngineUrl() ?? '');
 
-let wifiQuality = $state<QualityTier>(
-  (typeof localStorage !== 'undefined' ? (localStorage.getItem(QUALITY_WIFI_KEY) as QualityTier) : null) ||
-    'max',
-);
-
-let cellularQuality = $state<QualityTier>(
-  (typeof localStorage !== 'undefined'
-    ? (localStorage.getItem(QUALITY_CELLULAR_KEY) as QualityTier)
-    : null) || 'high',
-);
-
-let normalization = $state(player.normalizationEnabled);
 let crossfade = $state(player.crossfadeSeconds);
 
 // Testing status
 let testStatus = $state<'idle' | 'testing' | 'success' | 'error'>('idle');
 let testMessage = $state<string | null>(null);
-
-const tiers: { value: QualityTier; label: string; desc: string }[] = [
-  { value: 'max', label: 'Max', desc: 'Highest available tier from any source' },
-  { value: 'hires', label: 'Hi-Res', desc: 'Up to 24-bit / 192 kHz FLAC' },
-  { value: 'lossless', label: 'Lossless', desc: '16-bit / 44.1 kHz CD quality' },
-  { value: 'high', label: 'High', desc: 'AAC 320 kbps / MP3 320 kbps' },
-  { value: 'standard', label: 'Standard', desc: 'AAC 160 kbps / MP3 160 kbps' },
-];
 
 function handleSaveCredentials(e: SubmitEvent) {
   e.preventDefault();
@@ -97,29 +68,6 @@ async function handleTestConnection() {
   }
 }
 
-function handleWifiQualityChange(tier: QualityTier) {
-  wifiQuality = tier;
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(QUALITY_WIFI_KEY, tier);
-  }
-  player.setQuality(tier);
-  toast.push(`Wi-Fi playback quality set to ${tier.toUpperCase()}`);
-}
-
-function handleCellularQualityChange(tier: QualityTier) {
-  cellularQuality = tier;
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(QUALITY_CELLULAR_KEY, tier);
-  }
-  toast.push(`Cellular playback quality set to ${tier.toUpperCase()}`);
-}
-
-function handleNormalizationToggle() {
-  normalization = !normalization;
-  player.setNormalization(normalization);
-  toast.push(`Loudness normalization ${normalization ? 'enabled' : 'disabled'}`);
-}
-
 function handleCrossfadeChange(e: Event) {
   const target = e.target as HTMLInputElement;
   const val = Number(target.value);
@@ -130,7 +78,9 @@ function handleCrossfadeChange(e: Event) {
 function handleClearLocalData() {
   if (
     typeof confirm !== 'undefined' &&
-    !confirm('Are you sure you want to clear all local data, cached preferences, and storage?')
+    !confirm(
+      'Clear the settings, API key, engine URL and saved session stored in this browser? Your library (liked songs, playlists, history) is stored on the server and is not affected.',
+    )
   ) {
     return;
   }
@@ -139,14 +89,9 @@ function handleClearLocalData() {
   }
   apiKey = '';
   engineUrl = '';
-  wifiQuality = 'max';
-  cellularQuality = 'high';
-  normalization = true;
   crossfade = 0;
-  player.setNormalization(true);
   player.setCrossfade(0);
-  player.setQuality('max');
-  toast.push('All local storage data has been cleared');
+  toast.push('Local settings cleared. Your library on the server is untouched.');
 }
 </script>
 
@@ -162,7 +107,7 @@ function handleClearLocalData() {
       Settings
     </h1>
     <p class="mt-2 text-sm text-ink-muted max-w-xl">
-      Manage engine connectivity, audio pipeline parameters, quality preferences, and UI appearance.
+      Manage engine connectivity, audio processing and UI appearance. Playback always uses the best quality JioSaavn has (up to 320 kbps AAC).
     </p>
   </header>
 
@@ -172,7 +117,7 @@ function handleClearLocalData() {
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Engine & Authentication</h2>
         <p class="text-xs text-ink-muted mt-0.5">
-          Credentials for connecting to the NAAD v3 multi-source engine.
+          Credentials for connecting to the NAAD engine.
         </p>
       </div>
 
@@ -256,104 +201,17 @@ function handleClearLocalData() {
       </form>
     </section>
 
-    <!-- SECTION 2: Audio Quality Preferences -->
-    <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-6">
-      <div class="border-b border-border pb-3">
-        <h2 class="text-base font-semibold text-ink">Playback Quality Tiers</h2>
-        <p class="text-xs text-ink-muted mt-0.5">
-          Select target audio fidelity separately for Wi-Fi and mobile networks.
-        </p>
-      </div>
-
-      <!-- Wi-Fi Quality -->
-      <div class="space-y-3">
-        <p class="font-medium text-xs text-ink uppercase tracking-wide">
-          Wi-Fi & Ethernet Network
-        </p>
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
-          {#each tiers as tier}
-            <button
-              type="button"
-              onclick={() => handleWifiQualityChange(tier.value)}
-              class="flex flex-col items-start p-3 rounded-xs border text-left transition-colors {wifiQuality === tier.value
-                ? 'border-accent bg-accent/10 text-ink'
-                : 'border-border bg-surface-0 hover:bg-surface-2 text-ink-muted'}"
-            >
-              <span class="font-mono text-xs font-semibold uppercase {wifiQuality === tier.value ? 'text-accent' : 'text-ink'}">
-                {tier.label}
-              </span>
-              <span class="mt-1 text-[11px] text-ink-faint leading-tight">
-                {tier.desc}
-              </span>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Cellular Quality -->
-      <div class="space-y-3 pt-2 border-t border-border">
-        <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <p class="font-medium text-xs text-ink uppercase tracking-wide">
-            Cellular / Metered Network
-          </p>
-          <span class="text-[11px] font-mono text-ink-faint">
-            Active when browser supports <code class="text-ink">navigator.connection</code>
-          </span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
-          {#each tiers as tier}
-            <button
-              type="button"
-              onclick={() => handleCellularQualityChange(tier.value)}
-              class="flex flex-col items-start p-3 rounded-xs border text-left transition-colors {cellularQuality === tier.value
-                ? 'border-accent bg-accent/10 text-ink'
-                : 'border-border bg-surface-0 hover:bg-surface-2 text-ink-muted'}"
-            >
-              <span class="font-mono text-xs font-semibold uppercase {cellularQuality === tier.value ? 'text-accent' : 'text-ink'}">
-                {tier.label}
-              </span>
-              <span class="mt-1 text-[11px] text-ink-faint leading-tight">
-                {tier.desc}
-              </span>
-            </button>
-          {/each}
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 3: Audio Processing (Normalization & Crossfade) -->
+    <!-- SECTION 3: Audio Processing (Crossfade) -->
     <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-6">
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Signal Processing</h2>
         <p class="text-xs text-ink-muted mt-0.5">
-          Loudness matching and track boundary transitions.
+          Track boundary transitions.
         </p>
       </div>
 
-      <!-- Normalization Toggle -->
-      <div class="flex items-center justify-between gap-4">
-        <div>
-          <p class="text-sm font-medium text-ink">EBU R128 Loudness Normalization</p>
-          <p class="text-xs text-ink-muted max-w-lg mt-0.5">
-            Applies track-level gain attenuation (-14 LUFS standard) to ensure consistent volume across diverse catalog masters.
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={normalization}
-          aria-label="Toggle loudness normalization"
-          onclick={handleNormalizationToggle}
-          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {normalization ? 'bg-accent' : 'bg-surface-3'}"
-        >
-          <span
-            class="pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {normalization ? 'translate-x-5' : 'translate-x-0'}"
-          ></span>
-        </button>
-      </div>
-
       <!-- Crossfade Slider -->
-      <div class="space-y-2 pt-4 border-t border-border">
+      <div class="space-y-2">
         <div class="flex items-center justify-between text-xs">
           <span class="font-medium text-ink">Crossfade Duration</span>
           <span class="font-mono text-accent" data-numeric>
@@ -428,7 +286,7 @@ function handleClearLocalData() {
 
       <div class="flex flex-wrap items-center justify-between gap-4">
         <p class="text-xs text-ink-muted max-w-md">
-          Clearing local data will remove your saved API key, engine URL, audio quality preferences, and queue cache.
+          Clearing local data will remove your saved API key, engine URL, audio preferences, and queue cache.
         </p>
         <Button variant="danger" size="sm" onclick={handleClearLocalData}>
           Clear Local Data

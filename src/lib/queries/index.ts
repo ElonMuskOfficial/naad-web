@@ -82,62 +82,37 @@ export function createLyricsQuery(id: MaybeAccessor<string>) {
   });
 }
 
+/** naad answers at most this many ids per `contains` request. */
+const CONTAINS_BATCH = 100;
+
+/** Which of `trackIds` are liked. A playlist can hold up to 1000 tracks, so ask in batches. */
+export async function fetchLikedSet(trackIds: string[]): Promise<Set<string>> {
+  const liked = new Set<string>();
+  for (let from = 0; from < trackIds.length; from += CONTAINS_BATCH) {
+    const batch = trackIds.slice(from, from + CONTAINS_BATCH);
+    const { data, error } = await api.GET('/v1/library/tracks/contains', {
+      params: { query: { ids: batch.join(',') } },
+    });
+    if (error) throw error;
+    batch.forEach((id, index) => {
+      if (data?.[index]) liked.add(id);
+    });
+  }
+  return liked;
+}
+
+/** The playlists a track can be added to: naad only accepts additions to the user's own (JioSaavn ones are read-only). */
+export function userPlaylists<T extends { origin: string }>(playlists: T[]): T[] {
+  return playlists.filter((p) => p.origin === 'user');
+}
+
 export function createLikedContainsQuery(ids: MaybeAccessor<string[]>) {
   return createQuery(() => {
     const trackIds = unwrap(ids);
     return {
       queryKey: ['likedContains', trackIds],
-      queryFn: async () => {
-        if (!trackIds.length) return new Set<string>();
-        const { data, error } = await api.GET('/v1/library/tracks/contains', {
-          params: { query: { ids: trackIds.join(',') } },
-        });
-        if (error) throw error;
-        const set = new Set<string>();
-        trackIds.forEach((id, index) => {
-          if (data[index]) set.add(id);
-        });
-        return set;
-      },
+      queryFn: () => fetchLikedSet(trackIds),
       enabled: trackIds.length > 0,
-    };
-  });
-}
-
-export interface SourcesQueryOptions {
-  quality?: 'max' | 'hires' | 'lossless' | 'high' | 'standard';
-  refresh?: boolean;
-}
-
-export function createSourcesQuery(
-  id: MaybeAccessor<string>,
-  options?: MaybeAccessor<SourcesQueryOptions | undefined>,
-) {
-  return createQuery(() => {
-    const trackId = unwrap(id);
-    const opts = unwrap(options);
-    return {
-      queryKey: ['sources', trackId, opts?.quality, opts?.refresh],
-      queryFn: async () => {
-        const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
-          params: {
-            path: { id: trackId },
-            query: {
-              quality: opts?.quality ?? 'max',
-              refresh: opts?.refresh ? 'true' : undefined,
-            },
-          },
-        });
-        if (error) throw error;
-        return data;
-      },
-      enabled: Boolean(trackId),
-      // Never auto-refetch, keep staleTime safely below the 6-hour token expiry (e.g. 5 hours)
-      staleTime: 5 * 60 * 60 * 1000,
-      gcTime: 6 * 60 * 60 * 1000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchInterval: false,
     };
   });
 }
@@ -213,7 +188,8 @@ export function createPlaylistQuery(id: MaybeAccessor<string>, cursor?: MaybeAcc
         const { data, error } = await api.GET('/v1/playlists/{id}', {
           params: {
             path: { id: playlistId },
-            query: { cursor: cur },
+            // naad returns 100 tracks unless told otherwise; 200 is its maximum
+            query: { cursor: cur, limit: 200 },
           },
         });
         if (error) throw error;
@@ -302,29 +278,6 @@ export async function fetchRadioTracks(seed: string, limit = 25, exclude?: strin
   return data.tracks;
 }
 
-export function createImportStatusQuery(id: MaybeAccessor<string | undefined>) {
-  return createQuery(() => {
-    const importId = unwrap(id);
-    return {
-      queryKey: ['import', importId],
-      queryFn: async () => {
-        if (!importId) return null;
-        const { data, error } = await api.GET('/v1/imports/{id}', {
-          params: { path: { id: importId } },
-        });
-        if (error) throw error;
-        return data;
-      },
-      enabled: Boolean(importId),
-      refetchInterval: (query) => {
-        const status = query.state.data?.status;
-        if (status === 'completed' || status === 'failed') return false;
-        return 1500;
-      },
-    };
-  });
-}
-
 /**
  * Toggles a track's liked status via PUT /v1/library/tracks or DELETE /v1/library/tracks,
  * invalidating relevant queries and displaying a notification.
@@ -355,4 +308,55 @@ export async function toggleLikeTrack(track: Track, isLiked: boolean): Promise<b
     toast.push('Could not update Liked Songs', { tone: 'danger' });
     throw err;
   }
+}
+
+/** Follows or unfollows an artist and refreshes the followed list. Rejects (after telling the user) on failure. */
+export async function toggleFollowArtist(
+  artistId: string,
+  name: string,
+  isFollowed: boolean,
+): Promise<boolean> {
+  try {
+    if (isFollowed) {
+      await api.DELETE('/v1/library/artists/{id}', { params: { path: { id: artistId } } });
+    } else {
+      await api.PUT('/v1/library/artists/{id}', { params: { path: { id: artistId } } });
+    }
+    await queryClient.invalidateQueries({ queryKey: ['library', 'artists'] });
+    toast.push(isFollowed ? `Unfollowed ${name}` : `Followed ${name}`);
+    return !isFollowed;
+  } catch (err) {
+    toast.push('Failed to update follow status', { tone: 'danger' });
+    throw err;
+  }
+}
+
+/** Saves or removes an album in the library and refreshes the saved albums. Rejects on failure. */
+export async function toggleSaveAlbum(albumId: string, title: string, isSaved: boolean): Promise<boolean> {
+  try {
+    if (isSaved) {
+      await api.DELETE('/v1/library/albums/{id}', { params: { path: { id: albumId } } });
+    } else {
+      await api.PUT('/v1/library/albums/{id}', { params: { path: { id: albumId } } });
+    }
+    await queryClient.invalidateQueries({ queryKey: ['library', 'albums'] });
+    toast.push(isSaved ? `Removed "${title}" from library` : `Saved "${title}" to library`);
+    return !isSaved;
+  } catch (err) {
+    toast.push('Could not update your library', { tone: 'danger' });
+    throw err;
+  }
+}
+
+/** The L shortcut: asks the library whether the track is liked, then flips it (never blindly likes). */
+export async function toggleLikeCurrent(track: Track): Promise<boolean> {
+  let isLiked: boolean;
+  try {
+    const { data } = await api.GET('/v1/library/tracks/contains', { params: { query: { ids: track.id } } });
+    isLiked = data?.[0] === true;
+  } catch (err) {
+    toast.push('Could not update Liked Songs', { tone: 'danger' });
+    throw err;
+  }
+  return toggleLikeTrack(track, isLiked);
 }

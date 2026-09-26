@@ -14,7 +14,7 @@ test.describe('App Shell', () => {
     await expect(sidebar.getByText('Home')).toBeVisible();
     await expect(sidebar.getByText('Search')).toBeVisible();
     await expect(sidebar.getByText('Library')).toBeVisible();
-    await expect(sidebar.getByText('Playlists')).toBeVisible();
+    await expect(sidebar.getByText('Playlists', { exact: true })).toBeVisible();
 
     // Desktop player bar visible (72px)
     const playerBar = page.locator('footer[aria-label="Audio Player"]');

@@ -1,5 +1,38 @@
 # NAAD Web: Handoff Plan (Phases B–D)
 
+> **UPDATE 2026-09-26: the app now runs on `naad`, not `naad-v3`. Read this box first; sections below that describe
+> the old engine (Postgres, `/docs`, `openapi.json`, `/v1/sources`, imports, mixes, `naad-v3` paths) are historical.**
+>
+> - **Engine:** `D:\Dev\Projects\music\naad` (Node ≥ 22.9, plain JS, Fastify, Redis). Start it with
+>   `PORT=8080 REDIS_URL=… LIBRARY_REDIS_URL=… npm run dev`. `LIBRARY_REDIS_URL` is the persistent library (likes, saved
+>   albums, followed artists, playlists, history) and must not evict; unset, it shares `REDIS_URL`. See its README.
+> - **What `naad` serves:** the JioSaavn catalog (`/v1/home|search|tracks|albums|artists|playlists|charts|radio|art`,
+>   `/v1/tracks/{id}/audio|lyrics`) and the library (`/v1/library/*`, user playlists under `/v1/playlists`,
+>   `/v1/history`). Errors are Fastify's `{ statusCode, error, message }`.
+> - **How the app copes:** `src/lib/api/compat.ts`, wired into the `openapi-fetch` middleware in `client.ts`, adapts
+>   naad's answers to the shapes the components read (fills `quality/isrc/versionTags`, reshapes playlist pages, maps
+>   errors) and rewrites the `/sources` call into `/audio?quality=max`. `schema.d.ts` is the old
+>   generated contract and is kept as a superset; there is no OpenAPI document any more, so `npm run api:gen` no longer
+>   applies.
+> - **No quality tiers:** JioSaavn's best file (`max`, 320 kbps AAC for most songs) is always played, so the Settings
+>   tier picker, the stored `naad:quality*` preferences and the engine's `quality` plumbing are gone. The quality badge still
+>   shows the codec and bitrate of what is playing.
+> - **No loudness normalization:** naad sends no loudness data, so the toggle and the engine flag were removed
+>   (loudness differs by ~4 dB between songs; crossfade stays, and is skipped between tracks of one album by design).
+> - **Search "Load more"** on the Tracks/Albums/Artists/Playlists tabs (`src/lib/queries/search.ts`). naad builds its result
+>   window from several JioSaavn pages (JioSaavn caps one call at 40 results), so paging goes deep; pages overlap a
+>   little because the window is re-ranked, and the app drops repeats by id.
+> - **Removed:** the import feature (`/import`, palette entry, sidebar link). Mixes, `/resolve`, `/stream` and playlist
+>   duplicate were never built in naad and no screen uses them.
+> - **Session data** saved under another engine is wiped once (`src/lib/player/session-version.ts`, `DATA_VERSION`).
+>   Bump `DATA_VERSION` whenever saved ids stop being valid.
+> - **Fixed on the way:** the `L` shortcut toggles (it only ever liked), follow/unfollow refreshes the followed list,
+>   album Save really saves, and skipping to a preloaded next track records the listen (it was silently lost).
+> - **e2e** runs against a live engine (Vite proxies `/v1` to `NAAD_ENGINE_URL`, default `http://127.0.0.1:8080`) with
+>   real JioSaavn ids (Brahmastra `38845390`, Pritam `456323`), not the old `alb_…`/`art_…` ids.
+> - **Not verified by machine:** how playback sounds (gapless, crossfade, loudness). The audio element plays the
+>   320 kbps CDN stream and skips/prefetches correctly; judge quality by ear.
+
 This is everything needed to finish the NAAD web frontend: all remaining frontend work (Phases B, C and D), the engine changes the frontend depends on, and how to test every part. It is written for an AI coding agent picking up the work cold. Read sections 0–4 fully before touching code.
 
 - **Frontend:** `D:\Dev\Projects\music\naad-web` (SvelteKit SPA; this repo)

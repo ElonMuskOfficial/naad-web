@@ -1,10 +1,13 @@
 <script lang="ts">
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
-import { createArtistQuery, createFollowedArtistsQuery, createLikedContainsQuery } from '$lib/queries';
-import { api } from '$lib/api/client';
+import {
+  createArtistQuery,
+  createFollowedArtistsQuery,
+  createLikedContainsQuery,
+  toggleFollowArtist,
+} from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
-import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
@@ -52,20 +55,19 @@ function playAllTopTracks() {
   }
 }
 
+let followBusy = $state(false);
+
 async function toggleFollow() {
+  if (followBusy) return;
+  followBusy = true;
   const prev = following;
-  following = !following;
+  following = !following; // optimistic; the toggle reverts it on failure
   try {
-    if (prev) {
-      await api.DELETE('/v1/library/artists/{id}', { params: { path: { id: artistId } } });
-      toast.push(`Unfollowed ${artistQuery.data?.name ?? 'artist'}`);
-    } else {
-      await api.PUT('/v1/library/artists/{id}', { params: { path: { id: artistId } } });
-      toast.push(`Followed ${artistQuery.data?.name ?? 'artist'}`);
-    }
-  } catch (err) {
+    following = await toggleFollowArtist(artistId, artistQuery.data?.name ?? 'artist', prev);
+  } catch {
     following = prev;
-    toast.push('Failed to update follow status', { tone: 'danger' });
+  } finally {
+    followBusy = false;
   }
 }
 
@@ -153,6 +155,7 @@ function startArtistRadio() {
           <Button
             variant={following ? 'outline' : 'solid'}
             onclick={toggleFollow}
+            disabled={followBusy}
             aria-label={following ? 'Following artist' : 'Follow artist'}
           >
             {#if following}

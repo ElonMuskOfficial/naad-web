@@ -2,7 +2,6 @@
 import { page } from '$app/state';
 import { createLibraryPlaylistsQuery } from '$lib/queries';
 import { theme } from '$lib/theme.svelte';
-import ArrowSquareIn from 'phosphor-svelte/lib/ArrowSquareIn';
 import Books from 'phosphor-svelte/lib/Books';
 import Gear from 'phosphor-svelte/lib/Gear';
 import House from 'phosphor-svelte/lib/House';
@@ -28,9 +27,6 @@ function isNavActive(path: string): boolean {
     <a href="/" class="flex items-center gap-2 group">
       <span class="font-display text-lg font-semibold tracking-tight text-ink group-hover:text-accent transition-colors">
         NAAD
-      </span>
-      <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint px-1.5 py-0.5 rounded-xs bg-surface-2">
-        v3
       </span>
     </a>
   </div>
@@ -62,15 +58,6 @@ function isNavActive(path: string): boolean {
     >
       <Books size={18} weight="light" class={isNavActive('/library') ? 'text-accent' : ''} />
       <span>Library</span>
-    </a>
-
-    <a
-      href="/import"
-      class="flex items-center gap-3 px-3 py-2 rounded-xs text-sm transition-colors duration-[var(--duration-fast)]
-        {isNavActive('/import') ? 'bg-surface-2 text-ink font-medium' : 'text-ink-muted hover:text-ink hover:bg-surface-2/60'}"
-    >
-      <ArrowSquareIn size={18} weight="light" class={isNavActive('/import') ? 'text-accent' : ''} />
-      <span>Import</span>
     </a>
   </nav>
 

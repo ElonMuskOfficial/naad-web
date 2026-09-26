@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, createAuthMiddleware, extractErrorCode, isApiError } from './client';
 
+// biome-ignore lint/suspicious/noExplicitAny: these tests inspect loosely typed JSON
+type Loose = any;
+
 describe('ApiError and problem+json mapping', () => {
   it('extracts error code from URI type suffix', () => {
     expect(extractErrorCode('https://naad.dev/problems/not_found', 404)).toBe('not_found');
@@ -109,5 +112,106 @@ describe('createAuthMiddleware', () => {
         params: mockParams,
       }),
     ).rejects.toThrow('Album not found');
+  });
+});
+
+describe('createAuthMiddleware with naad', () => {
+  const ctx = (path: string, url: string) => ({
+    id: 'req',
+    request: new Request(url),
+    options: mockOptions,
+    schemaPath: path,
+    params: mockParams,
+  });
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+  it("turns Fastify's error body into an ApiError with a readable message", async () => {
+    const middleware = createAuthMiddleware(() => null);
+    const response = json({ statusCode: 404, error: 'Not Found', message: 'Playlist not found' }, 404);
+    const err: Loose = await (async () => {
+      try {
+        return await middleware.onResponse!({
+          ...ctx('/v1/playlists/{id}', 'http://h/v1/playlists/x'),
+          response,
+        });
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(isApiError(err)).toBe(true);
+    expect(err.status).toBe(404);
+    expect(err.message).toBe('Playlist not found');
+    expect(err.title).toBe('Not Found');
+  });
+
+  it('sends the sources request to /audio for the best quality', async () => {
+    const middleware = createAuthMiddleware(() => 'k');
+    const result = (await middleware.onRequest!(
+      ctx('/v1/tracks/{id}/sources', 'http://h/v1/tracks/abc123/sources?refresh=true'),
+    )) as Request;
+    const url = new URL(result.url);
+    expect(url.pathname).toBe('/v1/tracks/abc123/audio');
+    expect(url.searchParams.get('quality')).toBe('max');
+    expect(url.searchParams.get('refresh')).toBe('true');
+    expect(result.headers.get('authorization')).toBe('Bearer k');
+  });
+
+  it('answers the sources request in the shape the player consumes', async () => {
+    const middleware = createAuthMiddleware(() => null);
+    const response = json({
+      url: 'https://c/x_320.mp4',
+      bitrateKbps: 320,
+      codec: 'aac',
+      mimeType: 'audio/mp4',
+      durationMs: 5,
+    });
+    const out = (await middleware.onResponse!({
+      ...ctx('/v1/tracks/{id}/sources', 'http://h/v1/tracks/abc123/audio?quality=320'),
+      response,
+    })) as Response;
+    const body = await out.json();
+    expect(body.trackId).toBe('abc123');
+    expect(body.selected.tier).toBe('high');
+    expect(body.play.url).toBe('https://c/x_320.mp4');
+  });
+
+  it('fills the fields naad does not send on library responses', async () => {
+    const middleware = createAuthMiddleware(() => null);
+    const track = {
+      id: 't1',
+      title: 'T',
+      artists: [],
+      album: null,
+      durationMs: 1,
+      images: [],
+      explicit: false,
+      trackNumber: null,
+      url: null,
+    };
+    const response = json({ items: [{ likedAt: '2026-09-26T10:00:00.000Z', track }], next: null });
+    const out = (await middleware.onResponse!({
+      ...ctx('/v1/library/tracks', 'http://h/v1/library/tracks'),
+      response,
+    })) as Response;
+    const body = await out.json();
+    expect(body.items[0].track).toMatchObject({ quality: null, isrc: null, versionTags: [] });
+  });
+
+  it('leaves an empty 200 (what naad answers to mutations) alone', async () => {
+    const middleware = createAuthMiddleware(() => null);
+    const response = new Response(null, { status: 200 });
+    const out = await middleware.onResponse!({
+      ...ctx('/v1/library/tracks', 'http://h/v1/library/tracks'),
+      response,
+    });
+    expect((out as Response).status).toBe(200);
+  });
+
+  it('leaves a body that is not JSON alone', async () => {
+    const middleware = createAuthMiddleware(() => null);
+    const response = new Response('plain', { status: 200, headers: { 'content-type': 'text/plain' } });
+    const out = (await middleware.onResponse!({ ...ctx('/v1/x', 'http://h/v1/x'), response })) as Response;
+    expect(await out.text()).toBe('plain');
   });
 });

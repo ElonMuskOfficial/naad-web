@@ -4,8 +4,13 @@ import { bestImageUrl } from '$lib/art';
 import { formatDurationMs, joinArtists } from '$lib/format';
 import { Play, Shuffle } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
-import { createAlbumQuery, createLikedContainsQuery, toggleLikeTrack } from '$lib/queries';
-import { toast } from '$lib/toast.svelte';
+import {
+  createAlbumQuery,
+  createLikedContainsQuery,
+  createSavedAlbumsQuery,
+  toggleLikeTrack,
+  toggleSaveAlbum,
+} from '$lib/queries';
 import type { Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
@@ -24,7 +29,13 @@ const trackIds = $derived((albumQuery.data?.tracks ?? []).map((t) => t.id));
 const likedQuery = createLikedContainsQuery(() => trackIds);
 const likedIds = $derived(likedQuery.data ?? new Set<string>());
 
-let savedInLibrary = $state(false);
+// Saved state comes from the library; `savedOverride` is the optimistic value while a toggle is in flight.
+const savedAlbumsQuery = createSavedAlbumsQuery();
+let savedOverride = $state<boolean | null>(null);
+let saving = $state(false); // a second click while the first is in flight would race the first
+const savedInLibrary = $derived(
+  savedOverride ?? (savedAlbumsQuery.data?.items ?? []).some((item) => item.album.id === albumId),
+);
 
 const totalDurationMs = $derived(
   (albumQuery.data?.tracks ?? []).reduce((acc, t) => acc + (t.durationMs ?? 0), 0),
@@ -60,13 +71,19 @@ function shuffleAll() {
   }
 }
 
-function toggleSave() {
-  savedInLibrary = !savedInLibrary;
-  toast.push(
-    savedInLibrary
-      ? `Saved "${albumQuery.data?.title ?? 'album'}" to library`
-      : `Removed "${albumQuery.data?.title ?? 'album'}" from library`,
-  );
+async function toggleSave() {
+  if (saving) return;
+  saving = true;
+  const wasSaved = savedInLibrary;
+  savedOverride = !wasSaved;
+  try {
+    await toggleSaveAlbum(albumId, albumQuery.data?.title ?? 'album', wasSaved);
+  } catch {
+    // the toggle already told the user
+  } finally {
+    savedOverride = null; // the refreshed library is the truth again
+    saving = false;
+  }
 }
 </script>
 
@@ -194,6 +211,7 @@ function toggleSave() {
             variant="outline"
             size="md"
             onclick={toggleSave}
+            disabled={saving}
             class={savedInLibrary ? 'text-accent border-accent/40' : ''}
           >
             <BookmarkSimple size={18} weight={savedInLibrary ? 'fill' : 'light'} />

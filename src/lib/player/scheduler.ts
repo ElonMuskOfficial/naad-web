@@ -6,8 +6,6 @@ import type { AudioGraph } from './audio-graph';
 export type ResolvedSources =
   paths['/v1/tracks/{id}/sources']['get']['responses'][200]['content']['application/json'];
 
-export type QualityTier = 'max' | 'hires' | 'lossless' | 'high' | 'standard';
-
 export interface SchedulerCallbacks {
   onNextTrackReady?: (track: Track, sources: ResolvedSources) => void;
   onTrackTransition?: (track: Track, sources: ResolvedSources, newIndex: number) => void;
@@ -45,7 +43,7 @@ export class Scheduler {
    * Called whenever queue or queue index changes. Debounces prefetch requests (1000ms)
    * to respect the 60/min rate limit budget.
    */
-  queueChanged(queue: Track[], currentIndex: number, quality: QualityTier = 'max') {
+  queueChanged(queue: Track[], currentIndex: number) {
     if (this.prefetchTimeout) {
       clearTimeout(this.prefetchTimeout);
       this.prefetchTimeout = null;
@@ -60,10 +58,7 @@ export class Scheduler {
       this.prefetchTimeout = null;
       try {
         await api.POST('/v1/player/prefetch', {
-          body: {
-            trackIds,
-            quality,
-          },
+          body: { trackIds },
         });
         this.callbacks.onPrefetchDone?.(trackIds);
       } catch (err) {
@@ -102,12 +97,7 @@ export class Scheduler {
   /**
    * Preloads the next track into the idle audio element for gapless handoff.
    */
-  async prepareNextTrack(
-    queue: Track[],
-    currentIndex: number,
-    repeat: 'off' | 'all' | 'one',
-    quality: QualityTier = 'max',
-  ): Promise<void> {
+  async prepareNextTrack(queue: Track[], currentIndex: number, repeat: 'off' | 'all' | 'one'): Promise<void> {
     const nextIdx = this.getNextIndex(currentIndex, queue.length, repeat);
     if (nextIdx < 0 || nextIdx >= queue.length) {
       this.clearPreload();
@@ -130,7 +120,6 @@ export class Scheduler {
       const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
         params: {
           path: { id: nextTrack.id },
-          query: { quality },
         },
       });
 

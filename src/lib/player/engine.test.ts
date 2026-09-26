@@ -130,3 +130,48 @@ describe('PlayerEngine', () => {
     playIndexSpy.mockRestore();
   });
 });
+
+describe('listening history', () => {
+  it('records the listen of the track it leaves when skipping to a preloaded next track', async () => {
+    const [a, b] = tracks;
+    // @ts-expect-error private members, reached for this test only
+    const { historyTracker, scheduler, audioGraph } = player;
+
+    player.repeat = 'off';
+    player.queue = [a!, b!];
+    player.queueIndex = 0;
+    player.currentTrack = a!;
+    // @ts-expect-error private
+    player.listenStartTime = Date.now() - 5000;
+    // @ts-expect-error private
+    player.listenStartIso = '2026-09-26T10:00:00.000+00:00';
+
+    const record = vi.spyOn(historyTracker, 'record').mockImplementation(() => {});
+    vi.spyOn(scheduler, 'preloadedTrackInfo', 'get').mockReturnValue({
+      track: b!,
+      index: 1,
+      sources: {
+        selected: { id: 's', provider: 'jiosaavn' },
+        alternatives: [],
+        play: { url: 'https://cdn.example/b.mp4', expiresAt: '2099-01-01T00:00:00.000Z' },
+      },
+    } as never);
+    vi.spyOn(scheduler, 'prepareNextTrack').mockImplementation(async () => {});
+    vi.spyOn(scheduler, 'queueChanged').mockImplementation(() => {});
+    vi.spyOn(audioGraph, 'swapToPreloaded').mockResolvedValue(undefined as never);
+
+    await player.next();
+
+    expect(player.currentTrack?.id).toBe(b!.id);
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trackId: a!.id,
+        completed: false,
+        startedAt: '2026-09-26T10:00:00.000+00:00',
+      }),
+    );
+    expect(record.mock.calls[0]![0].msPlayed).toBeGreaterThanOrEqual(5000);
+    vi.restoreAllMocks();
+  });
+});

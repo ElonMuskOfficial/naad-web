@@ -4,6 +4,15 @@ import { goto, replaceState } from '$app/navigation';
 import { bestImageUrl } from '$lib/art';
 import { createLikedContainsQuery, createSearchQuery, toggleLikeTrack, type SearchType } from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
+import {
+  appendSearchPage,
+  emptySearchExtra,
+  fetchSearchPage,
+  mergeSearchResults,
+  type SearchExtra,
+} from '$lib/queries/search';
+import { toast } from '$lib/toast.svelte';
+import Button from '$lib/ui/Button.svelte';
 import type { Album, Artist, Playlist, Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
@@ -72,7 +81,37 @@ const searchQuery = createSearchQuery(
   () => requestedTypes,
 );
 
-const searchResults = $derived(searchQuery.data);
+// "Load more" on the typed tabs: pages after the first are kept here and merged into what the page shows.
+let extra = $state<SearchExtra>(emptySearchExtra());
+let loadingMore = $state(false);
+$effect(() => {
+  // a new query or another tab starts again from the first page
+  void debouncedQuery;
+  void activeTab;
+  extra = emptySearchExtra();
+});
+
+const searchResults = $derived(
+  searchQuery.data ? mergeSearchResults(searchQuery.data, extra) : searchQuery.data,
+);
+
+async function loadMore() {
+  const type = requestedTypes?.[0];
+  const offset = searchResults?.nextOffset;
+  if (!type || offset == null || loadingMore) return;
+  loadingMore = true;
+  const forQuery = debouncedQuery;
+  const forTab = activeTab;
+  try {
+    const page = await fetchSearchPage(forQuery, type, offset);
+    // the user may have searched for something else while this was loading
+    if (forQuery === debouncedQuery && forTab === activeTab) extra = appendSearchPage(extra, page);
+  } catch {
+    toast.push('Could not load more results', { tone: 'danger' });
+  } finally {
+    loadingMore = false;
+  }
+}
 
 // Track liked status for all displayed tracks
 const displayedTrackIds = $derived.by(() => {
@@ -105,6 +144,16 @@ function handleTopResultClick() {
   }
 }
 </script>
+
+{#snippet loadMoreButton()}
+  {#if searchResults && searchResults.nextOffset !== null}
+    <div class="flex justify-center pt-2">
+      <Button variant="outline" onclick={loadMore} disabled={loadingMore}>
+        {loadingMore ? 'Loading…' : 'Load more'}
+      </Button>
+    </div>
+  {/if}
+{/snippet}
 
 <svelte:head>
   <title>{debouncedQuery ? `Search: "${debouncedQuery}" — NAAD` : 'Search — NAAD'}</title>
@@ -403,6 +452,7 @@ function handleTopResultClick() {
           onplay={(t) => playTrack(t, searchResults.tracks)}
           onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
         />
+        {@render loadMoreButton()}
       </div>
     {:else if activeTab === 'albums'}
       <!-- All Albums view -->
@@ -420,6 +470,7 @@ function handleTopResultClick() {
             />
           {/each}
         </div>
+        {@render loadMoreButton()}
       </div>
     {:else if activeTab === 'artists'}
       <!-- All Artists view -->
@@ -438,6 +489,7 @@ function handleTopResultClick() {
             />
           {/each}
         </div>
+        {@render loadMoreButton()}
       </div>
     {:else if activeTab === 'playlists'}
       <!-- All Playlists view -->
@@ -455,6 +507,7 @@ function handleTopResultClick() {
             />
           {/each}
         </div>
+        {@render loadMoreButton()}
       </div>
     {/if}
   {/if}

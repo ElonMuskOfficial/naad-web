@@ -4,11 +4,9 @@ import favicon from '$lib/assets/favicon.svg';
 import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
 import { tick } from 'svelte';
-import { api } from '$lib/api/client';
 import { type CommandContext, handleGlobalKeydown } from '$lib/keys';
 import { player } from '$lib/player/engine.svelte';
-import { queryClient } from '$lib/queries';
-import { toast } from '$lib/toast.svelte';
+import { queryClient, toggleLikeCurrent } from '$lib/queries';
 import CommandPalette from '$lib/ui/CommandPalette.svelte';
 import MobileMiniPlayer from '$lib/ui/MobileMiniPlayer.svelte';
 import MobileNav from '$lib/ui/MobileNav.svelte';
@@ -62,13 +60,9 @@ const commandContext: CommandContext = {
   likeCurrentTrack: async () => {
     if (!player.currentTrack) return;
     try {
-      await api.PUT('/v1/library/tracks', {
-        body: { trackIds: [player.currentTrack.id] },
-      });
-      queryClient.invalidateQueries({ queryKey: ['library', 'tracks'] });
-      toast.push(`Added "${player.currentTrack.title}" to Liked Songs`);
+      await toggleLikeCurrent(player.currentTrack);
     } catch {
-      toast.push('Could not update Liked Songs', { tone: 'danger' });
+      // toggleLikeCurrent / toggleLikeTrack already told the user
     }
   },
 };

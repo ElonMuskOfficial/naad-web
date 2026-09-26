@@ -70,7 +70,7 @@ test.describe('Phase D: End-to-End Scenarios', () => {
 
   test('5. Track Context Menu on track row', async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Desktop test');
-    await page.goto('/artist/art_01m34h87jnjf8n105kms455jnb');
+    await page.goto('/artist/456323'); // Pritam
 
     // Wait for track rows to render
     const row = page.locator('[role="row"]').first();
@@ -87,25 +87,15 @@ test.describe('Phase D: End-to-End Scenarios', () => {
     await expect(page.getByRole('menuitem', { name: /Save to Liked Songs/i })).toBeVisible();
   });
 
-  test('6. Import page validation and elements', async ({ page }) => {
-    await page.goto('/import');
-    await expect(page.getByRole('heading', { name: 'Import Playlist' })).toBeVisible();
-
-    const urlInput = page.getByPlaceholder(/open\.spotify\.com/i);
-    await expect(urlInput).toBeVisible();
-    const submitBtn = page.getByRole('button', { name: /Start Import/i });
-    await expect(submitBtn).toBeVisible();
-  });
-
   test('7. Settings page and preferences', async ({ page }) => {
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 
-    // Verify API key and quality tiers
+    // Verify the API key field and audio processing (there are no quality tiers: playback is always the best)
     await expect(page.locator('#api-key')).toBeVisible();
-    await expect(page.getByText('Wi-Fi & Ethernet Network')).toBeVisible();
-    await expect(page.getByText('Cellular / Metered Network')).toBeVisible();
-    await expect(page.getByText('EBU R128 Loudness Normalization')).toBeVisible();
+    await expect(page.getByText('Playback Quality Tiers')).toHaveCount(0);
+    // naad sends no loudness data, so there is no normalization control to show
+    await expect(page.getByText('EBU R128 Loudness Normalization')).toHaveCount(0);
     await expect(page.getByText('Crossfade Duration')).toBeVisible();
   });
 

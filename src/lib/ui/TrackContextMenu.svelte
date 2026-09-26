@@ -11,7 +11,12 @@ import User from 'phosphor-svelte/lib/User';
 import { api } from '$lib/api/client';
 import { trackMenu } from '$lib/context-menu.svelte';
 import { type PlayerEngine } from '$lib/player/engine.svelte';
-import { createLibraryPlaylistsQuery, createLikedContainsQuery, toggleLikeTrack } from '$lib/queries';
+import {
+  createLibraryPlaylistsQuery,
+  createLikedContainsQuery,
+  toggleLikeTrack,
+  userPlaylists,
+} from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import Menu from './Menu.svelte';
@@ -26,6 +31,8 @@ let { player }: Props = $props();
 
 const queryClient = useQueryClient();
 const playlistsQuery = createLibraryPlaylistsQuery();
+// Saved JioSaavn playlists are read-only; only the user's own accept new tracks.
+const addablePlaylists = $derived(userPlaylists(playlistsQuery.data ?? []));
 
 const likedQuery = createLikedContainsQuery(() => (trackMenu.track ? [trackMenu.track.id] : []));
 const isLiked = $derived(Boolean(trackMenu.track && likedQuery.data?.has(trackMenu.track.id)));
@@ -155,8 +162,8 @@ async function handleAddTrackToPlaylist(playlistId: string, playlistTitle: strin
   <div class="space-y-1.5 pt-2">
     {#if playlistsQuery.isPending}
       <div class="py-6 text-center text-xs text-ink-muted">Loading playlists...</div>
-    {:else if playlistsQuery.data && playlistsQuery.data.length > 0}
-      {#each playlistsQuery.data as pl (pl.id)}
+    {:else if addablePlaylists.length > 0}
+      {#each addablePlaylists as pl (pl.id)}
         <button
           type="button"
           class="flex w-full items-center justify-between rounded-xs px-3 py-2 text-left text-sm hover:bg-surface-2 transition-colors group"
