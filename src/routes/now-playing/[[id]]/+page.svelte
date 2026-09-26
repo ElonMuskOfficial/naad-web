@@ -90,6 +90,10 @@ $effect(() => {
 // Keep URL path in sync with currentTrack without triggering full page reloads or loops
 $effect(() => {
   const currentId = player.currentTrack?.id;
+  // If the URL has a specific track ID that is still being loaded, do not bounce the URL away
+  if (routeTrackId && (!routeTrackQuery.data || routeTrackQuery.isPending) && currentId !== routeTrackId) {
+    return;
+  }
   if (currentId && page.params.id !== currentId) {
     loadedRouteId = currentId;
     const search = page.url.search;
@@ -409,9 +413,9 @@ function handleClose() {
       >
         <div class="flex-1 min-h-0 overflow-hidden">
           {#if activeTab === 'lyrics'}
-            {#if player.currentTrack}
+            {#if player.currentTrack || routeTrackId}
               <LyricsStage
-                trackId={player.currentTrack.id}
+                trackId={(player.currentTrack?.id ?? routeTrackId)!}
                 currentTime={player.currentTime}
                 onseek={(s) => player.commitSeek(s)}
               />
@@ -427,7 +431,6 @@ function handleClose() {
               <div class="flex flex-col gap-1">
                 {#each player.queue as track, idx (track.id ?? idx)}
                   {@const isCurrent = idx === player.queueIndex}
-                  {@const effectiveQuality = player.currentTrack?.id === track.id && player.selectedSource ? player.selectedSource : (player.resolvedQualities[track.id] ?? track.quality)}
                   <button
                     type="button"
                     onclick={() => player.playIndex(idx)}
@@ -458,9 +461,6 @@ function handleClose() {
                       </div>
                     </div>
                     <div class="flex items-center gap-3 pl-3 shrink-0">
-                      {#if effectiveQuality}
-                        <QualityBadge source={effectiveQuality} interactive={false} />
-                      {/if}
                       <span class="font-mono text-xs text-ink-muted" data-numeric>
                         {formatDurationMs(track.durationMs)}
                       </span>

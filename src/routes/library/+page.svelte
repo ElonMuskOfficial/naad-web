@@ -20,7 +20,6 @@ import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
-import QualityBadge from '$lib/ui/QualityBadge.svelte';
 import Skeleton from '$lib/ui/Skeleton.svelte';
 import TrackTable from '$lib/ui/TrackTable.svelte';
 import Clock from 'phosphor-svelte/lib/Clock';
@@ -426,11 +425,6 @@ function formatRelativeTime(isoString: string): string {
               </div>
 
               <div class="flex items-center gap-4 pl-3 shrink-0">
-                {#if record.track.quality}
-                  <div class="max-sm:hidden">
-                    <QualityBadge source={record.track.quality} interactive={false} />
-                  </div>
-                {/if}
                 <span class="font-mono text-xs text-ink-muted" title={record.playedAt}>
                   {formatRelativeTime(record.playedAt)}
                 </span>

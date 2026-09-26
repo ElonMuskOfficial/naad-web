@@ -17,7 +17,6 @@ import type { Album, Artist, Playlist, Track } from '$lib/types';
 import Artwork from '$lib/ui/Artwork.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
-import QualityBadge from '$lib/ui/QualityBadge.svelte';
 import Skeleton from '$lib/ui/Skeleton.svelte';
 import TrackTable from '$lib/ui/TrackTable.svelte';
 import { Play } from '$lib/icons';
@@ -308,10 +307,7 @@ function handleTopResultClick() {
               </div>
 
               {#if top.type === 'track'}
-                <div class="mt-auto flex items-center justify-between pt-2 border-t border-border">
-                  {#if top.item.quality}
-                    <QualityBadge source={top.item.quality} interactive={false} />
-                  {/if}
+                <div class="mt-auto flex items-center justify-end pt-2 border-t border-border">
                   <button
                     type="button"
                     onclick={(e) => {

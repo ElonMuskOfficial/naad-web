@@ -9,7 +9,6 @@ import type { Track } from '$lib/types';
 import { player } from '$lib/player/engine.svelte';
 import Artwork from './Artwork.svelte';
 import PlayingIndicator from './PlayingIndicator.svelte';
-import QualityBadge from './QualityBadge.svelte';
 
 interface Props {
   track: Track;
@@ -38,11 +37,6 @@ let {
 
 const artist = $derived(joinArtists(track.artists.map((a) => a.name)));
 const artwork = $derived(bestImageUrl(track.images, 120) ?? bestImageUrl(track.album?.images, 120));
-const effectiveQuality = $derived(
-  player.currentTrack?.id === track.id && player.selectedSource
-    ? player.selectedSource
-    : (player.resolvedQualities[track.id] ?? track.quality),
-);
 let menuButton = $state<HTMLElement>();
 let rowElement = $state<HTMLElement>();
 let touchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -141,12 +135,6 @@ function handleTouchEnd() {
       <span class="max-sm:hidden" aria-hidden="true"></span>
     {/if}
   {/if}
-
-  <div class="max-sm:hidden">
-    {#if effectiveQuality}
-      <QualityBadge source={effectiveQuality} interactive={false} />
-    {/if}
-  </div>
 
   <button
     type="button"

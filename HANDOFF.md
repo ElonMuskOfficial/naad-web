@@ -17,6 +17,10 @@
 > - **No quality tiers:** JioSaavn's best file (`max`, 320 kbps AAC for most songs) is always played, so the Settings
 >   tier picker, the stored `naad:quality*` preferences and the engine's `quality` plumbing are gone. The quality badge still
 >   shows the codec and bitrate of what is playing.
+> - **Quality badge only for the playing song** (player bar, now-playing header, signal-path card). Lists, the
+>   History tab, the playlist page, the search top result and the queue panel show none: naad reports a song's bitrate only
+>   from its own `/audio` lookup, so a badge on every row would need one request per row for a value that is almost
+>   always AAC 320.
 > - **No loudness normalization:** naad sends no loudness data, so the toggle and the engine flag were removed
 >   (loudness differs by ~4 dB between songs; crossfade stays, and is skipped between tracks of one album by design).
 > - **Search "Load more"** on the Tracks/Albums/Artists/Playlists tabs (`src/lib/queries/search.ts`). naad builds its result

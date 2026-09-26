@@ -12,7 +12,6 @@ import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import IconButton from '$lib/ui/IconButton.svelte';
-import QualityBadge from '$lib/ui/QualityBadge.svelte';
 import Skeleton from '$lib/ui/Skeleton.svelte';
 import ArrowDown from 'phosphor-svelte/lib/ArrowDown';
 import ArrowLeft from 'phosphor-svelte/lib/ArrowLeft';
@@ -415,13 +414,6 @@ async function executeMove(fromIndex: number, toIndex: number) {
                     {joinArtists(item.track.artists.map((a) => a.name))}
                   </p>
                 </div>
-              </div>
-
-              <!-- Quality Badge -->
-              <div class="max-sm:hidden">
-                {#if item.track.quality}
-                  <QualityBadge source={item.track.quality} interactive={false} />
-                {/if}
               </div>
 
               <!-- Liked status -->
