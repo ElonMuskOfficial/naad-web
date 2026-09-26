@@ -22,8 +22,7 @@ const homeQuery = createHomeQuery();
 <div class="px-4 py-6 sm:px-6 sm:py-8 max-w-7xl mx-auto flex flex-col gap-8">
   <!-- Header: Content starts at top, editorial sleeve typography -->
   <div>
-    <p class="font-mono text-2xs uppercase tracking-wider text-ink-faint">Discovery</p>
-    <h1 class="font-display text-2xl sm:text-3xl text-ink font-normal mt-1">Jump back in</h1>
+    <h1 class="font-display text-2xl sm:text-3xl text-ink font-normal">Discover</h1>
   </div>
 
   {#if homeQuery.isPending}
