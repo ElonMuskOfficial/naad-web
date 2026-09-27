@@ -421,6 +421,54 @@ export interface paths {
       responses: { 200: { headers: { [name: string]: unknown }; content?: never } };
     };
   };
+  "/v1/stations": {
+    parameters: { query?: never; header?: never; path?: never; cookie?: never };
+    get: {
+      parameters: { query?: { language?: string }; header?: never; path?: never; cookie?: never };
+      requestBody?: never;
+      responses: {
+        200: {
+          headers: { [name: string]: unknown };
+          content: {
+            "application/json": {
+              stations: {
+                id: string;
+                name: string;
+                subtitle: string | null;
+                images: components["schemas"]["Image"][];
+                language: string | null;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    post: {
+      parameters: { query?: never; header?: never; path?: never; cookie?: never };
+      requestBody: { content: { "application/json": { name: string; language?: string } } };
+      responses: {
+        201: { headers: { [name: string]: unknown }; content: { "application/json": { stationId: string } } };
+      };
+    };
+  };
+  "/v1/stations/{id}/songs": {
+    parameters: { query?: never; header?: never; path: { id: string }; cookie?: never };
+    get: {
+      parameters: {
+        query?: { limit?: number };
+        header?: never;
+        path: { id: string };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        200: {
+          headers: { [name: string]: unknown };
+          content: { "application/json": { tracks: components["schemas"]["Track"][] } };
+        };
+      };
+    };
+  };
   "/v1/player/prefetch": {
     parameters: { query?: never; header?: never; path?: never; cookie?: never };
     post: {

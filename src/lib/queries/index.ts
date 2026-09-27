@@ -375,3 +375,33 @@ export async function playPlaylistById(id: string): Promise<void> {
     toast.push('Could not play this playlist', { tone: 'danger' });
   }
 }
+
+/** JioSaavn's curated radio stations (mood/language/artist presets), not naad's own algorithm. */
+export function createStationsQuery() {
+  return createQuery(() => ({
+    queryKey: ['stations'],
+    queryFn: async () => {
+      const { data, error } = await api.GET('/v1/stations');
+      if (error) throw error;
+      return data.stations;
+    },
+  }));
+}
+
+/** Starts one of JioSaavn's curated stations (by the `name` a listing gave you) and plays its first batch. */
+export async function playStation(name: string, language?: string | null): Promise<void> {
+  try {
+    const { data: created, error: createError } = await api.POST('/v1/stations', {
+      body: { name, language: language ?? undefined },
+    });
+    if (createError || !created?.stationId) throw createError ?? new Error('could not start station');
+    const { data: songs, error: songsError } = await api.GET('/v1/stations/{id}/songs', {
+      params: { path: { id: created.stationId } },
+    });
+    const tracks = songs?.tracks ?? [];
+    if (songsError || !tracks.length) throw songsError ?? new Error('empty station');
+    player.playTrack(tracks[0]!, tracks, { type: 'station', id: created.stationId });
+  } catch {
+    toast.push('Could not play this station', { tone: 'danger' });
+  }
+}

@@ -3,6 +3,7 @@ import { page } from '$app/state';
 import { createLibraryPlaylistsQuery } from '$lib/queries';
 import { theme } from '$lib/theme.svelte';
 import Books from 'phosphor-svelte/lib/Books';
+import Broadcast from 'phosphor-svelte/lib/Broadcast';
 import Gear from 'phosphor-svelte/lib/Gear';
 import House from 'phosphor-svelte/lib/House';
 import MagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
@@ -58,6 +59,15 @@ function isNavActive(path: string): boolean {
     >
       <Books size={18} weight="light" class={isNavActive('/library') ? 'text-accent' : ''} />
       <span>Library</span>
+    </a>
+
+    <a
+      href="/stations"
+      class="flex items-center gap-3 px-3 py-2 rounded-xs text-sm transition-colors duration-[var(--duration-fast)]
+        {isNavActive('/stations') ? 'bg-surface-2 text-ink font-medium' : 'text-ink-muted hover:text-ink hover:bg-surface-2/60'}"
+    >
+      <Broadcast size={18} weight="light" class={isNavActive('/stations') ? 'text-accent' : ''} />
+      <span>Stations</span>
     </a>
   </nav>
 

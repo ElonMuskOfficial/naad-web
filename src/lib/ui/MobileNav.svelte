@@ -1,6 +1,7 @@
 <script lang="ts">
 import { page } from '$app/state';
 import Books from 'phosphor-svelte/lib/Books';
+import Broadcast from 'phosphor-svelte/lib/Broadcast';
 import Gear from 'phosphor-svelte/lib/Gear';
 import House from 'phosphor-svelte/lib/House';
 import MagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
@@ -40,6 +41,15 @@ function isNavActive(path: string): boolean {
   >
     <Books size={20} weight={isNavActive('/library') ? 'regular' : 'light'} />
     <span>Library</span>
+  </a>
+
+  <a
+    href="/stations"
+    class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] transition-colors
+      {isNavActive('/stations') ? 'text-accent font-medium' : 'text-ink-muted hover:text-ink'}"
+  >
+    <Broadcast size={20} weight={isNavActive('/stations') ? 'regular' : 'light'} />
+    <span>Stations</span>
   </a>
 
   <a
