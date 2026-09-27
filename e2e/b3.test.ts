@@ -27,8 +27,7 @@ test.describe('Home and Album Routes', () => {
     // Track table with rows
     await expect(page.getByText('Kesariya').first()).toBeVisible();
 
-    // Liner notes area. naad sends no ISRC, so every track says so instead of showing a code.
+    // Liner notes area. naad sends no ISRC, so the per-track ISRC line was removed entirely.
     await expect(page.getByText('Liner Notes & Catalog Record')).toBeVisible();
-    await expect(page.getByText('NO ISRC').first()).toBeVisible();
   });
 });

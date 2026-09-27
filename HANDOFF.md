@@ -6,14 +6,16 @@
 > - **Engine:** `D:\Dev\Projects\music\naad` (Node ≥ 22.9, plain JS, Fastify, Redis). Start it with
 >   `PORT=8080 REDIS_URL=… LIBRARY_REDIS_URL=… npm run dev`. `LIBRARY_REDIS_URL` is the persistent library (likes, saved
 >   albums, followed artists, playlists, history) and must not evict; unset, it shares `REDIS_URL`. See its README.
-> - **What `naad` serves:** the JioSaavn catalog (`/v1/home|search|tracks|albums|artists|playlists|charts|radio|art`,
+> - **What `naad` serves:** the JioSaavn catalog (`/v1/home|search|tracks|albums|artists|playlists|radio|art`,
 >   `/v1/tracks/{id}/audio|lyrics`) and the library (`/v1/library/*`, user playlists under `/v1/playlists`,
 >   `/v1/history`). Errors are Fastify's `{ statusCode, error, message }`.
-> - **How the app copes:** `src/lib/api/compat.ts`, wired into the `openapi-fetch` middleware in `client.ts`, adapts
->   naad's answers to the shapes the components read (fills `quality/isrc/versionTags`, reshapes playlist pages, maps
->   errors) and rewrites the `/sources` call into `/audio?quality=max`. `schema.d.ts` is the old
->   generated contract and is kept as a superset; there is no OpenAPI document any more, so `npm run api:gen` no longer
->   applies.
+> - **UPDATE 2026-09-27: the app now matches naad's real shapes directly, no adapter layer.**
+>   `src/lib/api/compat.ts` (which used to adapt naad's answers into the old multi-provider shapes the
+>   components read) has been deleted. `schema.d.ts` is hand-written to match naad's real JSON exactly —
+>   naad has no OpenAPI document to generate it from, so it's maintained by hand against naad's actual
+>   source, not kept as a "superset" of anything. `npm run api:gen` has been removed from `package.json`
+>   for the same reason. See `docs/superpowers/specs/2026-09-27-jiosaavn-only-refactor-design.md` and its
+>   accompanying plan for the full rationale.
 > - **No quality tiers:** JioSaavn's best file (`max`, 320 kbps AAC for most songs) is always played, so the Settings
 >   tier picker, the stored `naad:quality*` preferences and the engine's `quality` plumbing are gone. The quality badge still
 >   shows the codec and bitrate of what is playing.

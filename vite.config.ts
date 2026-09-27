@@ -6,7 +6,7 @@ import { defineConfig } from 'vite';
 
 // Single-page app: adapter-static (see src/routes/+layout.ts) serves everything from one
 // fallback page, so the router owns navigation and the audio graph in the root layout never
-// remounts. In dev, /v1 (and friends) proxy straight to the naad-v3 engine.
+// remounts. In dev, /v1 (and friends) proxy straight to the naad engine.
 const ENGINE_URL = process.env.NAAD_ENGINE_URL ?? 'http://127.0.0.1:8080';
 
 export default defineConfig({
@@ -32,7 +32,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Audio and the OpenAPI doc are fetched live; only the app shell is precached.
+        // Audio is fetched live; only the app shell is precached.
         globPatterns: ['client/**/*.{js,css,ico,svg,woff,woff2}'],
         navigateFallbackDenylist: [/^\/v1\//],
       },

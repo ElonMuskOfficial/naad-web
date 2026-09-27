@@ -97,4 +97,18 @@ describe('HistoryTracker', () => {
     tracker.destroy();
     localStorage.removeItem('naad:engineUrl');
   });
+
+  it('does not produce a double slash when the configured Engine URL ends in a slash', () => {
+    localStorage.setItem('naad:engineUrl', 'https://remote-engine.example/');
+    const tracker = new HistoryTracker();
+    tracker.record({ trackId: 'trk_trailing', msPlayed: 15000 });
+    tracker.flush();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://remote-engine.example/v1/history',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    tracker.destroy();
+    localStorage.removeItem('naad:engineUrl');
+  });
 });

@@ -13,8 +13,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "api:gen": "openapi-typescript http://127.0.0.1:8080/v1/openapi.json -o src/lib/api/schema.d.ts"
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

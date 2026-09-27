@@ -1,3 +1,5 @@
+import { toEngineUrl } from '$lib/api/client';
+
 /**
  * Image quality enhancements and proxy routing for NAAD.
  */
@@ -54,6 +56,17 @@ export function bestImageUrl(
   return upgradeImageUrl(chosenUrl, preferredSize);
 }
 
+function buildArtProxyUrl(upgradedSrc: string, size?: number): string {
+  const params = new URLSearchParams();
+  params.set('src', upgradedSrc);
+  if (size && size > 0) {
+    // Request at least 1.5x-2x for crisp Retina/High-DPI rendering
+    const renderSize = Math.max(Math.round(size * 1.5), 160);
+    params.set('size', String(renderSize));
+  }
+  return toEngineUrl(`/v1/art?${params.toString()}`);
+}
+
 /**
  * Generates an artwork proxy URL for an image source.
  * Proxies through /v1/art to ensure CORS readability and template resizing.
@@ -67,14 +80,7 @@ export function artUrl(src?: string | null, size?: number): string | undefined {
   if (upgradedSrc.includes('saavncdn.com')) {
     return upgradedSrc;
   }
-  const params = new URLSearchParams();
-  params.set('src', upgradedSrc);
-  if (size && size > 0) {
-    // Request at least 1.5x-2x for crisp Retina/High-DPI rendering
-    const renderSize = Math.max(Math.round(size * 1.5), 160);
-    params.set('size', String(renderSize));
-  }
-  return `/v1/art?${params.toString()}`;
+  return buildArtProxyUrl(upgradedSrc, size);
 }
 
 /**
@@ -89,11 +95,5 @@ export function corsArtUrl(src?: string | null, size?: number): string | undefin
     return src;
   }
   const upgradedSrc = upgradeImageUrl(src, size ? Math.max(size, 400) : 600) ?? src;
-  const params = new URLSearchParams();
-  params.set('src', upgradedSrc);
-  if (size && size > 0) {
-    const renderSize = Math.max(Math.round(size * 1.5), 160);
-    params.set('size', String(renderSize));
-  }
-  return `/v1/art?${params.toString()}`;
+  return buildArtProxyUrl(upgradedSrc, size);
 }

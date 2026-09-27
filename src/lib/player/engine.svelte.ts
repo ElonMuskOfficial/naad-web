@@ -320,6 +320,7 @@ export class PlayerEngine {
     }
 
     this.currentTrack = track;
+    this.currentAudio = null;
     this.currentTime = 0;
     this.buffered = 0;
     this.duration = (track.durationMs ?? 0) / 1000;

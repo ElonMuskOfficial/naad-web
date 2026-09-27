@@ -474,7 +474,7 @@ export interface components {
       album: { id: string; title: string; images: components["schemas"]["Image"][] } | null;
       durationMs: number | null;
       explicit: boolean;
-      /** Always null from naad today; kept because `trackView` in map.js emits the field. */
+      /** Null for most tracks; set to a real 1-based position for album tracks (naad/lib/jiosaavn/client.js's `getAlbum`, via `trackView`'s `over` parameter). */
       trackNumber: number | null;
       images: components["schemas"]["Image"][];
       /** JioSaavn's own `perma_url`. */
@@ -501,8 +501,8 @@ export interface components {
      * `entries` is only present on the direct `GET /v1/playlists/{id}` response for the user's own
      * (`usr_…`) playlists. `tracks` is present there too, but ALSO for an external (JioSaavn) playlist
      * fetched by id — only `entries` distinguishes "this is the user's own." `origin`/`inLibrary` are
-     * only present on `GET /v1/library/playlists` and on a JioSaavn playlist fetched by id. A playlist
-     * inside a search result or a home-feed section has none of these four fields.
+     * present on `GET /v1/library/playlists`, and on a `usr_…` or external playlist fetched directly by
+     * id — i.e. everywhere except a playlist embedded in a search result or a home-feed section.
      */
     Playlist: {
       id: string;

@@ -65,6 +65,12 @@ export function setStoredEngineUrl(url: string | null): void {
   }
 }
 
+/** Prefixes a `/v1/...` path with the configured Engine URL (or nothing, meaning same-origin). */
+export function toEngineUrl(path: string): string {
+  const base = (getStoredEngineUrl() ?? '').replace(/\/$/, '');
+  return `${base}${path}`;
+}
+
 export function createAuthMiddleware(getApiKey: () => string | null = getStoredApiKey): Middleware {
   return {
     async onRequest({ request }) {
