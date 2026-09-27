@@ -16,7 +16,7 @@
 - No route naad doesn't have (`/v1/imports`, `/v1/resolve`, `/v1/stream/*`, `/v1/mixes`, `/v1/charts`, `/v1/new-releases`, `/v1/queue/*`, `/v1/tracks/{id}/play`) may appear in the new type file.
 - No frontend behavior change beyond what's specified: crossfade, search, library CRUD, radio, and history batching stay as they are except for the one named bug fix in Task 4.
 - No changes to `naad` (the backend) in this plan. The search-offset overflow bug (spec Section 5, item 3) is explicitly out of scope here.
-- Every touched `*.test.ts` is updated in the same task as its source file. `npm run check`, `npm run lint`, and `npm run test` are only required to be fully clean at the end of Task 8 — earlier tasks will leave `npm run check` reporting errors in files a later task still owns; each task's own step 2 (or equivalent) names exactly which errors are expected and why.
+- Every touched `*.test.ts` is updated in the same task as its source file. `npm run check`, `npm run lint`, and `npm run test` are only required to be fully clean at the end of Task 9 — earlier tasks will leave `npm run check` reporting errors in files a later task still owns; each task's own step 2 (or equivalent) names exactly which errors are expected and why.
 
 ## Review Focus
 
@@ -2705,7 +2705,153 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 8: Final verification sweep
+## Task 8: Fix the playlist page for naad's real Playlist shape
+
+**Discovered during execution (not in the original plan):** a live `tsc --noEmit` run after Task 1
+landed showed `src/routes/playlist/[id]/+page.svelte` still reads the old compat-synthesized
+`playlist.items.items` / `.items.next` page wrapper, and compares `playlistQuery.data?.origin` against
+`'import'` — a value that was never real (naad only ever reports `'user'` or `'external'`; the import
+feature was removed and never built in naad per `HANDOFF.md`) and isn't part of Task 1's `origin` union.
+No task in the original plan touched this file. Ruling: add this task rather than leave the playlist
+page broken — it's a straightforward consequence of Task 1's real `Playlist` shape, not a design
+question.
+
+**Files:**
+- Modify: `src/routes/playlist/[id]/+page.svelte`
+
+**Interfaces:**
+- Consumes: `Playlist` from Task 1 — `tracks?: Track[]`, `entries?: {itemId: string; addedAt: string}[]`
+  (present together only for the user's own playlist; absent together for an external JioSaavn one),
+  `origin?: 'user' | 'external'`.
+- Produces: no change to the route's own exports (it's a page, not a module other code imports).
+
+- [ ] **Step 1: Fix how local `items` state is built from the query**
+
+Change:
+```svelte
+// Sync local items with query data
+$effect(() => {
+  if (playlistQuery.data?.items?.items) {
+    items = [...playlistQuery.data.items.items];
+  }
+});
+```
+to:
+```svelte
+// Sync local items with query data: naad returns parallel `tracks`/`entries` arrays for the user's
+// own playlist (same order, same length), and only `tracks` for an external (JioSaavn) one.
+$effect(() => {
+  const tracks = playlistQuery.data?.tracks;
+  const entries = playlistQuery.data?.entries;
+  if (tracks) {
+    items = tracks.map((track, i) => ({
+      itemId: entries?.[i]?.itemId ?? `${playlistId}:${i}`,
+      addedAt: entries?.[i]?.addedAt ?? new Date(0).toISOString(),
+      track,
+    }));
+  }
+});
+```
+(the synthetic `itemId` fallback only ever applies to a read-only external playlist, since
+`isEditablePlaylist` below gates every action that uses `itemId` for a real mutation — it's a Svelte
+`{#each ... (item.itemId)}` key, not sent to the server for those playlists. **This `if (tracks)` guard
+must NOT become `if (tracks && entries)`** — naad only ever sends `entries` alongside `tracks` for the
+user's own playlist; an external playlist has `tracks` with no `entries` at all, and requiring both
+would leave every external playlist's track list permanently empty.)
+
+- [ ] **Step 2: Remove the impossible `'import'` origin branch from `isEditablePlaylist`**
+
+Change:
+```svelte
+const isEditablePlaylist = $derived(
+  playlistQuery.data?.origin === 'user' || playlistQuery.data?.origin === 'import',
+);
+```
+to:
+```svelte
+const isEditablePlaylist = $derived(playlistQuery.data?.origin === 'user');
+```
+
+- [ ] **Step 3: Fix the origin label to only ever show a real value**
+
+Change:
+```svelte
+        <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
+          Playlist · {pl.origin === 'user' ? 'Library' : pl.origin === 'import' ? 'Imported' : pl.origin}
+        </span>
+```
+to:
+```svelte
+        <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
+          Playlist · {pl.origin === 'user' ? 'Library' : 'JioSaavn'}
+        </span>
+```
+
+- [ ] **Step 4: Remove the stale "Quality" column header**
+
+The track-row grid (`style="grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px 48px auto"`,
+around line 373) renders 6 real cells — drag handle, index/play, artwork+title, liked-heart, duration,
+actions — across those 7 template slots (the 20px slot has no dedicated child; auto-placement quietly
+absorbs it). The column header above it (line 344) still labels one slot "Quality" with its own 150px
+width, left over from before commit `eb0472c` removed the per-row quality badge this row used to render.
+Since both blocks are already being edited in this task and the fix is a mechanical column-count match,
+not a design change, align the header to the body's real template exactly:
+
+Change:
+```svelte
+        <div
+          class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint border-b border-border max-sm:hidden"
+          style="grid-template-columns: 28px 28px minmax(0, 1fr) 150px 20px 48px 48px"
+        >
+          <span></span>
+          <span class="text-right" data-numeric>#</span>
+          <span>Title</span>
+          <span>Quality</span>
+          <span></span>
+          <span class="text-right">Time</span>
+          <span class="text-right">Actions</span>
+        </div>
+```
+to:
+```svelte
+        <div
+          class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint border-b border-border max-sm:hidden"
+          style="grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px 48px auto"
+        >
+          <span></span>
+          <span class="text-right" data-numeric>#</span>
+          <span>Title</span>
+          <span></span>
+          <span></span>
+          <span class="text-right">Time</span>
+          <span class="text-right">Actions</span>
+        </div>
+```
+
+- [ ] **Step 5: Check this file for type errors**
+
+Run: `npx tsc --noEmit --project . 2>&1 | grep "routes\\\\playlist"`
+Expected: no output.
+
+- [ ] **Step 6: Run the full unit test suite**
+
+Run: `npx vitest run`
+Expected: PASS (this file has no dedicated unit test — it's exercised by `test:e2e` against a live
+engine, out of scope for this plan per Global Constraints — but this confirms the change didn't break
+any other test).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/routes/playlist/\[id\]/+page.svelte
+git commit -m "fix(playlist): read naad's real tracks/entries shape, drop the dead import origin
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+---
+
+## Task 9: Final verification sweep
 
 **Files:** none (verification only).
 
