@@ -49,9 +49,7 @@ $effect(() => {
   }
 });
 
-const isEditablePlaylist = $derived(
-  playlistQuery.data?.origin === 'user',
-);
+const isEditablePlaylist = $derived(playlistQuery.data?.origin === 'user');
 
 // Inline editing state
 let isEditing = $state(false);

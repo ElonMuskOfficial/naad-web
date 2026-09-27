@@ -229,7 +229,9 @@ export class PlayerEngine {
     if (this.retryCount === 0) {
       this.retryCount++;
       const savedPos = this.currentTime;
-      console.info(`[PlayerEngine] Re-resolving audio for "${this.currentTrack.title}" at position ${savedPos}s`);
+      console.info(
+        `[PlayerEngine] Re-resolving audio for "${this.currentTrack.title}" at position ${savedPos}s`,
+      );
 
       try {
         const { data, error } = await api.GET('/v1/tracks/{id}/audio', {
