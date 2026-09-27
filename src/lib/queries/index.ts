@@ -377,15 +377,18 @@ export async function playPlaylistById(id: string): Promise<void> {
 }
 
 /** JioSaavn's curated radio stations (mood/language/artist presets), not naad's own algorithm. */
-export function createStationsQuery() {
-  return createQuery(() => ({
-    queryKey: ['stations'],
-    queryFn: async () => {
-      const { data, error } = await api.GET('/v1/stations');
-      if (error) throw error;
-      return data.stations;
-    },
-  }));
+export function createStationsQuery(language?: MaybeAccessor<string | undefined>) {
+  return createQuery(() => {
+    const lang = unwrap(language);
+    return {
+      queryKey: ['stations', lang ?? 'default'],
+      queryFn: async () => {
+        const { data, error } = await api.GET('/v1/stations', { params: { query: { language: lang } } });
+        if (error) throw error;
+        return data.stations;
+      },
+    };
+  });
 }
 
 /** Starts one of JioSaavn's curated stations (by the `name` a listing gave you) and plays its first batch. */
