@@ -51,24 +51,10 @@ $effect(() => {
   }
 });
 
-// Sync server metadata (e.g. newly upgraded quality) into currentTrack
+// If viewing the Signal path tab and audio for the current track hasn't been resolved yet, resolve it
 $effect(() => {
-  if (routeTrackQuery.data && player.currentTrack?.id === routeTrackQuery.data.id) {
-    if (
-      routeTrackQuery.data.quality &&
-      (!player.currentTrack.quality ||
-        player.currentTrack.quality.tier !== routeTrackQuery.data.quality.tier ||
-        player.currentTrack.quality.provider !== routeTrackQuery.data.quality.provider)
-    ) {
-      player.currentTrack = { ...player.currentTrack, quality: routeTrackQuery.data.quality };
-    }
-  }
-});
-
-// If viewing the Signal path tab or current source is unresolved, resolve technical source
-$effect(() => {
-  if (activeTab === 'signal' && player.currentTrack && !player.selectedSource) {
-    void player.resolveSources(player.currentTrack.id);
+  if (activeTab === 'signal' && player.currentTrack && !player.currentAudio) {
+    void player.resolveAudio(player.currentTrack.id);
   }
 });
 
@@ -288,14 +274,9 @@ function handleClose() {
 
           <!-- Quality Readout: Click switches directly to Signal path tab -->
           <div class="mt-2 flex items-center justify-center lg:justify-start gap-2">
-            {#if player.selectedSource}
+            {#if player.currentAudio}
               <QualityBadge
-                source={player.selectedSource}
-                onclick={() => switchTab('signal')}
-              />
-            {:else if player.currentTrack?.quality}
-              <QualityBadge
-                source={player.currentTrack.quality}
+                audio={player.currentAudio}
                 onclick={() => switchTab('signal')}
               />
             {/if}
@@ -472,10 +453,7 @@ function handleClose() {
           {:else if activeTab === 'signal'}
             <!-- Signal Path Technical Card -->
             <div class="h-full w-full overflow-y-auto py-4">
-              <SignalPathCard
-                selectedSource={player.selectedSource}
-                alternatives={player.alternatives}
-              />
+              <SignalPathCard audio={player.currentAudio} />
             </div>
           {/if}
         </div>

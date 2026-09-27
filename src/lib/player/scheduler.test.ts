@@ -1,30 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import type { Track } from '$lib/types';
+import type { Audio, Track } from '$lib/types';
 import { AudioGraph } from './audio-graph';
-import { type ResolvedSources, Scheduler } from './scheduler';
+import { Scheduler } from './scheduler';
 
 function createDummyTrack(id: string, albumId?: string): Track {
   return {
     id,
     title: `Track ${id}`,
     artists: [{ id: 'art_1', name: 'Artist' }],
-    album: albumId
-      ? {
-          id: albumId,
-          title: `Album ${albumId}`,
-          images: [],
-        }
-      : null,
+    album: albumId ? { id: albumId, title: `Album ${albumId}`, images: [] } : null,
     durationMs: 200_000,
-    isrc: null,
     explicit: false,
-    discNumber: 1,
     trackNumber: 1,
     images: [],
-    quality: null,
-    versionTags: [],
+    url: null,
   };
 }
+
+const dummyAudio: Audio = {
+  trackId: 'trk_2',
+  url: 'https://example.com/stream.mp4',
+  bitrateKbps: 320,
+  codec: 'aac',
+  mimeType: 'audio/mp4',
+  durationMs: 200_000,
+};
 
 describe('Scheduler: getNextIndex', () => {
   const dummyGraph = new AudioGraph();
@@ -63,39 +63,10 @@ describe('Scheduler: checkCrossfade album boundary logic', () => {
     const track1 = createDummyTrack('trk_1', 'alb_same');
     const track2 = createDummyTrack('trk_2', 'alb_same');
 
-    // Manually prime the preloaded track info
-    const dummySources: ResolvedSources = {
-      trackId: 'trk_2',
-      selected: {
-        id: 'src_2',
-        provider: 'monochrome',
-        tier: 'lossless',
-        codec: 'flac',
-        container: 'flac',
-        mimeType: 'audio/flac',
-        bitDepth: 16,
-        sampleRate: 44100,
-        bitrateKbps: 900,
-        durationMs: 200000,
-        delivery: 'redirect',
-        matchScore: 1,
-        normalization: null,
-        verifiedAt: '2026-09-23T00:00:00Z',
-      },
-      alternatives: [],
-      play: {
-        url: 'https://example.com/stream.flac',
-        expiresAt: '2026-09-23T12:00:00Z',
-        mimeType: 'audio/flac',
-        normalization: null,
-      },
-    };
-
-    // Inject preloaded state for testing
     // @ts-expect-error accessing private property for unit test
     scheduler.preloadedTrack = track2;
     // @ts-expect-error accessing private property for unit test
-    scheduler.preloadedSources = dummySources;
+    scheduler.preloadedAudio = dummyAudio;
     // @ts-expect-error accessing private property for unit test
     scheduler.preloadedIndex = 1;
 
@@ -111,37 +82,10 @@ describe('Scheduler: checkCrossfade album boundary logic', () => {
     const track1 = createDummyTrack('trk_1', 'alb_A');
     const track2 = createDummyTrack('trk_2', 'alb_B');
 
-    const dummySources: ResolvedSources = {
-      trackId: 'trk_2',
-      selected: {
-        id: 'src_2',
-        provider: 'monochrome',
-        tier: 'lossless',
-        codec: 'flac',
-        container: 'flac',
-        mimeType: 'audio/flac',
-        bitDepth: 16,
-        sampleRate: 44100,
-        bitrateKbps: 900,
-        durationMs: 200000,
-        delivery: 'redirect',
-        matchScore: 1,
-        normalization: null,
-        verifiedAt: '2026-09-23T00:00:00Z',
-      },
-      alternatives: [],
-      play: {
-        url: 'https://example.com/stream.flac',
-        expiresAt: '2026-09-23T12:00:00Z',
-        mimeType: 'audio/flac',
-        normalization: null,
-      },
-    };
-
     // @ts-expect-error accessing private property for unit test
     scheduler.preloadedTrack = track2;
     // @ts-expect-error accessing private property for unit test
-    scheduler.preloadedSources = dummySources;
+    scheduler.preloadedAudio = dummyAudio;
     // @ts-expect-error accessing private property for unit test
     scheduler.preloadedIndex = 1;
 

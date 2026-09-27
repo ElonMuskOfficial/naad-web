@@ -155,8 +155,8 @@ function toggleTab(tab: 'queue' | 'lyrics') {
 
   <!-- Right: Quality badge, secondary toggles & volume -->
   <div class="flex w-[260px] shrink-0 items-center justify-end gap-3">
-    {#if player.selectedSource}
-      <QualityBadge source={player.selectedSource} />
+    {#if player.currentAudio}
+      <QualityBadge audio={player.currentAudio} />
     {/if}
 
     <div class="flex items-center gap-1">

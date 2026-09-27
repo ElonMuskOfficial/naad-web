@@ -1,5 +1,3 @@
-import { calculateEffectiveVolume } from './math';
-
 export interface AudioGraphCallbacks {
   onTimeUpdate?: (currentTime: number) => void;
   onDurationChange?: (duration: number) => void;
@@ -17,8 +15,6 @@ export class AudioGraph {
   private elementB: HTMLAudioElement | null = null;
   private activeSlot: 'A' | 'B' = 'A';
   private userVolume = 0.85;
-  private currentGainDb: number | null = null;
-  private nextGainDb: number | null = null;
   private callbacks: AudioGraphCallbacks;
   private endedTimestamp = 0;
   private isCrossfading = false;
@@ -129,7 +125,7 @@ export class AudioGraph {
   /**
    * Loads a stream URL into the active element and begins playback.
    */
-  async loadAndPlay(url: string, gainDb?: number | null, startPosition = 0): Promise<void> {
+  async loadAndPlay(url: string, startPosition = 0): Promise<void> {
     const el = this.activeElement;
     if (!el) return;
 
@@ -140,10 +136,9 @@ export class AudioGraph {
       this.idleElement.removeAttribute('src');
       this.idleElement.load();
     }
-    this.currentGainDb = gainDb ?? null;
     this.callbacks.onBuffered?.(0);
     el.src = url;
-    el.volume = calculateEffectiveVolume(this.userVolume, this.currentGainDb);
+    el.volume = this.userVolume;
     if (startPosition > 0) {
       el.currentTime = startPosition;
     }
@@ -159,13 +154,12 @@ export class AudioGraph {
   /**
    * Preloads the next track into the idle element.
    */
-  preload(url: string, gainDb?: number | null) {
+  preload(url: string) {
     const idle = this.idleElement;
     if (!idle) return;
 
-    this.nextGainDb = gainDb ?? null;
     idle.src = url;
-    idle.volume = calculateEffectiveVolume(this.userVolume, this.nextGainDb);
+    idle.volume = this.userVolume;
     idle.preload = 'auto';
     idle.load();
   }
@@ -180,8 +174,6 @@ export class AudioGraph {
     if (!nextActive?.src) return;
 
     this.activeSlot = this.activeSlot === 'A' ? 'B' : 'A';
-    this.currentGainDb = this.nextGainDb;
-    this.nextGainDb = null;
 
     if (prevActive) {
       prevActive.pause();
@@ -189,7 +181,7 @@ export class AudioGraph {
       prevActive.load();
     }
 
-    nextActive.volume = calculateEffectiveVolume(this.userVolume, this.currentGainDb);
+    nextActive.volume = this.userVolume;
 
     try {
       await nextActive.play();
@@ -211,8 +203,8 @@ export class AudioGraph {
     }
 
     this.isCrossfading = true;
-    const targetOutVol = calculateEffectiveVolume(this.userVolume, this.currentGainDb);
-    const targetInVol = calculateEffectiveVolume(this.userVolume, this.nextGainDb);
+    const targetOutVol = this.userVolume;
+    const targetInVol = this.userVolume;
 
     incoming.volume = 0;
     incoming.play().catch(() => {});
@@ -232,8 +224,6 @@ export class AudioGraph {
       } else {
         this.isCrossfading = false;
         this.activeSlot = this.activeSlot === 'A' ? 'B' : 'A';
-        this.currentGainDb = this.nextGainDb;
-        this.nextGainDb = null;
         outgoing.pause();
         outgoing.removeAttribute('src');
         outgoing.load();
@@ -268,13 +258,10 @@ export class AudioGraph {
     }
   }
 
-  setVolume(volume: number, gainDb?: number | null) {
+  setVolume(volume: number) {
     this.userVolume = Math.max(0, Math.min(1, volume));
-    if (gainDb !== undefined) {
-      this.currentGainDb = gainDb;
-    }
     if (this.activeElement) {
-      this.activeElement.volume = calculateEffectiveVolume(this.userVolume, this.currentGainDb);
+      this.activeElement.volume = this.userVolume;
     }
   }
 

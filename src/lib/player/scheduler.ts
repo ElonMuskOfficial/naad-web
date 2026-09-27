@@ -1,14 +1,10 @@
 import { api } from '$lib/api/client';
-import type { paths } from '$lib/api/schema';
-import type { Track } from '$lib/types';
+import type { Audio, Track } from '$lib/types';
 import type { AudioGraph } from './audio-graph';
 
-export type ResolvedSources =
-  paths['/v1/tracks/{id}/sources']['get']['responses'][200]['content']['application/json'];
-
 export interface SchedulerCallbacks {
-  onNextTrackReady?: (track: Track, sources: ResolvedSources) => void;
-  onTrackTransition?: (track: Track, sources: ResolvedSources, newIndex: number) => void;
+  onNextTrackReady?: (track: Track, audio: Audio) => void;
+  onTrackTransition?: (track: Track, audio: Audio, newIndex: number) => void;
   onEndOfQueue?: () => void;
   onPrefetchDone?: (trackIds: string[]) => void;
 }
@@ -18,7 +14,7 @@ export class Scheduler {
   private callbacks: SchedulerCallbacks;
   private prefetchTimeout: ReturnType<typeof setTimeout> | null = null;
   private preloadedTrack: Track | null = null;
-  private preloadedSources: ResolvedSources | null = null;
+  private preloadedAudio: Audio | null = null;
   private preloadedIndex: number | null = null;
   private isPreloading = false;
   private isCrossfadeTriggered = false;
@@ -28,11 +24,11 @@ export class Scheduler {
     this.callbacks = callbacks;
   }
 
-  get preloadedTrackInfo(): { track: Track; sources: ResolvedSources; index: number } | null {
-    if (this.preloadedTrack && this.preloadedSources && this.preloadedIndex != null) {
+  get preloadedTrackInfo(): { track: Track; audio: Audio; index: number } | null {
+    if (this.preloadedTrack && this.preloadedAudio && this.preloadedIndex != null) {
       return {
         track: this.preloadedTrack,
-        sources: this.preloadedSources,
+        audio: this.preloadedAudio,
         index: this.preloadedIndex,
       };
     }
@@ -73,7 +69,7 @@ export class Scheduler {
    */
   clearPreload() {
     this.preloadedTrack = null;
-    this.preloadedSources = null;
+    this.preloadedAudio = null;
     this.preloadedIndex = null;
     this.isPreloading = false;
     this.isCrossfadeTriggered = false;
@@ -117,26 +113,24 @@ export class Scheduler {
     this.isPreloading = true;
 
     try {
-      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
-        params: {
-          path: { id: nextTrack.id },
-        },
+      const { data, error } = await api.GET('/v1/tracks/{id}/audio', {
+        params: { path: { id: nextTrack.id } },
       });
 
-      if (error || !data || !data.play?.url) {
-        console.warn('[Scheduler] Failed to resolve source for preloading:', error);
+      if (error || !data?.url) {
+        console.warn('[Scheduler] Failed to resolve audio for preloading:', error);
         this.isPreloading = false;
         return;
       }
 
       this.preloadedTrack = nextTrack;
-      this.preloadedSources = data;
+      this.preloadedAudio = data;
       this.preloadedIndex = nextIdx;
       this.isPreloading = false;
       this.isCrossfadeTriggered = false;
 
       // Preload into the idle audio element
-      this.audioGraph.preload(data.play.url, data.play.normalization?.gainDb);
+      this.audioGraph.preload(data.url);
       this.callbacks.onNextTrackReady?.(nextTrack, data);
     } catch (err) {
       console.warn('[Scheduler] Preload error:', err);
@@ -160,7 +154,7 @@ export class Scheduler {
       duration <= crossfadeSeconds ||
       this.isCrossfadeTriggered ||
       !this.preloadedTrack ||
-      !this.preloadedSources ||
+      !this.preloadedAudio ||
       this.preloadedIndex == null
     ) {
       return false;
@@ -181,12 +175,12 @@ export class Scheduler {
     if (remainingTime <= crossfadeSeconds && remainingTime > 0) {
       this.isCrossfadeTriggered = true;
       const targetTrack = this.preloadedTrack;
-      const targetSources = this.preloadedSources;
+      const targetAudio = this.preloadedAudio;
       const targetIndex = this.preloadedIndex;
 
       this.audioGraph.startCrossfade(crossfadeSeconds, () => {
         this.clearPreload();
-        this.callbacks.onTrackTransition?.(targetTrack, targetSources, targetIndex);
+        this.callbacks.onTrackTransition?.(targetTrack, targetAudio, targetIndex);
       });
       return true;
     }
@@ -208,14 +202,14 @@ export class Scheduler {
       return true;
     }
 
-    if (this.preloadedTrack && this.preloadedSources && this.preloadedIndex != null) {
+    if (this.preloadedTrack && this.preloadedAudio && this.preloadedIndex != null) {
       const targetTrack = this.preloadedTrack;
-      const targetSources = this.preloadedSources;
+      const targetAudio = this.preloadedAudio;
       const targetIndex = this.preloadedIndex;
 
       this.clearPreload();
       await this.audioGraph.swapToPreloaded();
-      this.callbacks.onTrackTransition?.(targetTrack, targetSources, targetIndex);
+      this.callbacks.onTrackTransition?.(targetTrack, targetAudio, targetIndex);
       return true;
     }
 

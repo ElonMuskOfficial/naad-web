@@ -5,7 +5,7 @@ import { player } from './engine.svelte';
 describe('PlayerEngine', () => {
   it('initializes with clean idle state for production', () => {
     expect(player.currentTrack).toBeNull();
-    expect(player.selectedSource).toBeNull();
+    expect(player.currentAudio).toBeNull();
     expect(player.status).toBe('idle');
     expect(player.currentTime).toBe(0);
     expect(player.duration).toBe(0);
@@ -74,9 +74,8 @@ describe('PlayerEngine', () => {
     expect(player.currentTime).toBe(200);
   });
 
-  it('commitSeek clamps within duration for non-proxy delivery', () => {
+  it('commitSeek clamps within duration', () => {
     player.duration = 200;
-    // No selectedSource → non-proxy path
     player.commitSeek(150);
     expect(player.currentTime).toBe(150);
     player.commitSeek(-5);
@@ -129,6 +128,28 @@ describe('PlayerEngine', () => {
 
     playIndexSpy.mockRestore();
   });
+
+  it('skips to the next track when audio fails and the refresh retry also fails', async () => {
+    const { api } = await import('$lib/api/client');
+    const getSpy = vi.spyOn(api, 'GET').mockResolvedValue({
+      data: undefined,
+      error: { statusCode: 500, error: 'Internal Server Error', message: 'boom' },
+      response: new Response(),
+    } as never);
+    const nextSpy = vi.spyOn(player, 'next').mockImplementation(async () => {});
+
+    player.currentTrack = tracks[0]!;
+    // @ts-expect-error private, reached for this test only
+    player.retryCount = 0;
+    // @ts-expect-error private method, reached for this test only
+    await player.handleAudioError(null);
+
+    expect(getSpy).toHaveBeenCalledTimes(1);
+    expect(nextSpy).toHaveBeenCalledTimes(1);
+
+    getSpy.mockRestore();
+    nextSpy.mockRestore();
+  });
 });
 
 describe('listening history', () => {
@@ -150,10 +171,12 @@ describe('listening history', () => {
     vi.spyOn(scheduler, 'preloadedTrackInfo', 'get').mockReturnValue({
       track: b!,
       index: 1,
-      sources: {
-        selected: { id: 's', provider: 'jiosaavn' },
-        alternatives: [],
-        play: { url: 'https://cdn.example/b.mp4', expiresAt: '2099-01-01T00:00:00.000Z' },
+      audio: {
+        url: 'https://cdn.example/b.mp4',
+        bitrateKbps: 320,
+        codec: 'aac',
+        mimeType: 'audio/mp4',
+        durationMs: 200_000,
       },
     } as never);
     vi.spyOn(scheduler, 'prepareNextTrack').mockImplementation(async () => {});

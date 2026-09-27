@@ -14,47 +14,18 @@ export function formatDurationMs(ms: number | null | undefined): string {
   return formatTime(ms / 1000);
 }
 
-export type Tier = 'hires' | 'lossless' | 'high' | 'standard';
-
 export interface QualityInfo {
-  tier: Tier;
-  label: string; // short badge text, e.g. "HI-RES · FLAC 24/96"
+  label: string; // short badge text, e.g. "AAC 320"
   detail: string; // long form for the Signal path card
 }
 
-/** Mirrors the engine's tier semantics (naad-v3 src/modules/playback/types.ts). */
-export function describeQuality(source: {
-  tier: Tier;
-  codec: string;
-  bitDepth?: number | null;
-  sampleRate?: number | null;
-  bitrateKbps?: number | null;
-}): QualityInfo {
-  const codec = source.codec.toUpperCase();
-  if (source.tier === 'hires' && source.bitDepth && source.sampleRate) {
-    const khz = (source.sampleRate / 1000).toFixed(source.sampleRate % 1000 === 0 ? 0 : 1);
-    return {
-      tier: 'hires',
-      label: `HI-RES · ${codec} ${source.bitDepth}/${khz}`,
-      detail: `${codec}, ${source.bitDepth}-bit / ${khz} kHz`,
-    };
-  }
-  if (source.tier === 'lossless' && source.bitDepth && source.sampleRate) {
-    const khz = (source.sampleRate / 1000).toFixed(source.sampleRate % 1000 === 0 ? 0 : 1);
-    return {
-      tier: 'lossless',
-      label: `LOSSLESS · ${codec} ${source.bitDepth}/${khz}`,
-      detail: `${codec}, ${source.bitDepth}-bit / ${khz} kHz`,
-    };
-  }
-  if (source.bitrateKbps) {
-    return {
-      tier: source.tier === 'high' ? 'high' : 'standard',
-      label: `${codec} ${source.bitrateKbps}`,
-      detail: `${codec}, ${source.bitrateKbps} kbps`,
-    };
-  }
-  return { tier: source.tier, label: codec, detail: codec };
+/** naad's whole catalog tops out at AAC 320kbps, so there is exactly one badge shape to render. */
+export function describeQuality(audio: { codec: string; bitrateKbps: number }): QualityInfo {
+  const codec = audio.codec.toUpperCase();
+  return {
+    label: `${codec} ${audio.bitrateKbps}`,
+    detail: `${codec}, ${audio.bitrateKbps} kbps`,
+  };
 }
 
 export function formatBitrate(kbps?: number | null): string {

@@ -1,11 +1,11 @@
 import { api } from '$lib/api/client';
 import { toast } from '$lib/toast.svelte';
-import type { Source, Track } from '$lib/types';
+import type { Audio, Track } from '$lib/types';
 import { AudioGraph } from './audio-graph';
 import { HistoryTracker } from './history';
-import { formatIsoWithOffset, isTokenExpiringSoon, shuffleArray } from './math';
+import { formatIsoWithOffset, shuffleArray } from './math';
 import { MediaSessionController } from './media-session';
-import { type ResolvedSources, Scheduler } from './scheduler';
+import { Scheduler } from './scheduler';
 import { migrateSession } from './session-version';
 
 export const VOLUME_STORAGE_KEY = 'naad:volume';
@@ -17,10 +17,8 @@ export const SESSION_QUEUE_INDEX_KEY = 'naad:queue_index';
 export class PlayerEngine {
   // Playback state (Svelte 5 runes)
   currentTrack = $state<Track | null>(null);
-  selectedSource = $state<Source | null>(null);
-  alternatives = $state<Source[]>([]);
+  currentAudio = $state<Audio | null>(null);
   currentPlayUrl = $state<string | null>(null);
-  currentExpiresAt = $state<string | null>(null);
   status = $state<'idle' | 'playing' | 'paused' | 'loading'>('idle');
   currentTime = $state<number>(0);
   duration = $state<number>(0);
@@ -48,7 +46,6 @@ export class PlayerEngine {
   private listenStartTime: number | null = null;
   private listenStartIso: string = formatIsoWithOffset();
   private retryCount = 0;
-  private isRefreshingToken = false;
 
   constructor() {
     this.readStoredSettings();
@@ -62,7 +59,6 @@ export class PlayerEngine {
         this.currentTime = time;
         this.mediaSession.setPositionState(this.duration, time);
         this.scheduler.checkCrossfade(this.currentTrack, time, this.duration, this.crossfadeSeconds);
-        this.checkProactiveExpiry();
       },
       onDurationChange: (dur) => {
         if (Number.isFinite(dur) && dur > 0) {
@@ -117,9 +113,9 @@ export class PlayerEngine {
     });
 
     this.scheduler = new Scheduler(this.audioGraph, {
-      onTrackTransition: (track, sourcesData, newIndex) => {
+      onTrackTransition: (track, audio, newIndex) => {
         this.recordCurrentListen(true);
-        this.applyTrackTransition(track, sourcesData, newIndex);
+        this.applyTrackTransition(track, audio, newIndex);
       },
       onEndOfQueue: () => {
         this.recordCurrentListen(true);
@@ -190,12 +186,10 @@ export class PlayerEngine {
     }
   }
 
-  private applyTrackTransition(track: Track, sourcesData: ResolvedSources, newIndex: number) {
+  private applyTrackTransition(track: Track, audio: Audio, newIndex: number) {
     this.currentTrack = track;
-    this.selectedSource = sourcesData.selected;
-    this.alternatives = sourcesData.alternatives ?? [];
-    this.currentPlayUrl = sourcesData.play.url;
-    this.currentExpiresAt = sourcesData.play.expiresAt;
+    this.currentAudio = audio;
+    this.currentPlayUrl = audio.url;
     this.queueIndex = newIndex;
     this.currentTime = 0;
     this.buffered = 0;
@@ -235,65 +229,31 @@ export class PlayerEngine {
     if (this.retryCount === 0) {
       this.retryCount++;
       const savedPos = this.currentTime;
-      console.info(
-        `[PlayerEngine] Refreshing token for "${this.currentTrack.title}" at position ${savedPos}s`,
-      );
+      console.info(`[PlayerEngine] Re-resolving audio for "${this.currentTrack.title}" at position ${savedPos}s`);
 
       try {
-        const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+        const { data, error } = await api.GET('/v1/tracks/{id}/audio', {
           params: {
             path: { id: this.currentTrack.id },
-            query: { refresh: 'true' },
+            query: { refresh: true },
           },
         });
 
-        if (error || !data?.play?.url) {
-          throw error ?? new Error('No play URL returned on refresh');
+        if (error || !data?.url) {
+          throw error ?? new Error('No audio URL returned on refresh');
         }
 
-        this.selectedSource = data.selected;
-        this.currentPlayUrl = data.play.url;
-        this.currentExpiresAt = data.play.expiresAt;
-        await this.audioGraph.loadAndPlay(data.play.url, null, savedPos);
+        this.currentAudio = data;
+        this.currentPlayUrl = data.url;
+        await this.audioGraph.loadAndPlay(data.url, savedPos);
         return;
       } catch (refreshErr) {
-        console.warn('[PlayerEngine] Recovery with refresh token failed:', refreshErr);
+        console.warn('[PlayerEngine] Recovery with a fresh audio lookup failed:', refreshErr);
       }
     }
 
     toast.push(`Couldn't play "${this.currentTrack.title}", skipped`, { tone: 'danger' });
     this.next();
-  }
-
-  private async checkProactiveExpiry() {
-    if (
-      !this.currentExpiresAt ||
-      !this.currentTrack ||
-      this.isRefreshingToken ||
-      !isTokenExpiringSoon(this.currentExpiresAt)
-    ) {
-      return;
-    }
-
-    this.isRefreshingToken = true;
-    try {
-      const { data } = await api.GET('/v1/tracks/{id}/sources', {
-        params: {
-          path: { id: this.currentTrack.id },
-          query: { refresh: 'true' },
-        },
-      });
-
-      if (data?.play) {
-        this.currentExpiresAt = data.play.expiresAt;
-        this.currentPlayUrl = data.play.url;
-        this.selectedSource = data.selected;
-      }
-    } catch (e) {
-      console.warn('[PlayerEngine] Proactive token refresh failed:', e);
-    } finally {
-      this.isRefreshingToken = false;
-    }
   }
 
   private recordCurrentListen(completed = false) {
@@ -306,7 +266,6 @@ export class PlayerEngine {
         msPlayed,
         completed,
         context: this.listenContext,
-        sourceProvider: this.selectedSource?.provider,
       });
     }
     this.listenStartTime = null;
@@ -366,36 +325,19 @@ export class PlayerEngine {
     this.scheduler.clearPreload();
 
     try {
-      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+      const { data, error } = await api.GET('/v1/tracks/{id}/audio', {
         params: {
           path: { id: track.id },
         },
       });
 
-      if (error || !data || !data.play?.url) {
-        throw error ?? new Error('No playable source found');
+      if (error || !data?.url) {
+        throw error ?? new Error('No playable audio found');
       }
 
-      this.selectedSource = data.selected;
-      this.alternatives = data.alternatives ?? [];
-      this.currentPlayUrl = data.play.url;
-      this.currentExpiresAt = data.play.expiresAt;
-
-      if (data.selected) {
-        this.currentTrack = {
-          ...track,
-          quality: {
-            tier: data.selected.tier,
-            codec: data.selected.codec,
-            bitDepth: data.selected.bitDepth,
-            sampleRate: data.selected.sampleRate,
-            bitrateKbps: data.selected.bitrateKbps,
-            provider: data.selected.provider,
-            verifiedAt: data.selected.verifiedAt,
-          },
-        };
-      }
-      await this.audioGraph.loadAndPlay(data.play.url, null, 0);
+      this.currentAudio = data;
+      this.currentPlayUrl = data.url;
+      await this.audioGraph.loadAndPlay(data.url, 0);
 
       this.status = 'playing';
       this.listenStartTime = Date.now();
@@ -438,7 +380,7 @@ export class PlayerEngine {
         // playTrack() records what it leaves; this path swaps tracks without it, so the skipped listen was lost.
         this.recordCurrentListen(false);
         await this.audioGraph.swapToPreloaded();
-        this.applyTrackTransition(preloaded.track, preloaded.sources, nextIdx);
+        this.applyTrackTransition(preloaded.track, preloaded.audio, nextIdx);
       } else {
         await this.playIndex(nextIdx);
       }
@@ -532,34 +474,21 @@ export class PlayerEngine {
     this.scheduler.queueChanged(this.queue, this.queueIndex);
   }
 
-  async resolveSources(trackId?: string): Promise<Source | null> {
+  async resolveAudio(trackId?: string): Promise<Audio | null> {
     const targetId = trackId ?? this.currentTrack?.id;
     if (!targetId) return null;
     try {
-      const { data, error } = await api.GET('/v1/tracks/{id}/sources', {
+      const { data, error } = await api.GET('/v1/tracks/{id}/audio', {
         params: {
           path: { id: targetId },
         },
       });
-      if (error || !data?.selected) return null;
+      if (error || !data) return null;
       if (this.currentTrack && this.currentTrack.id === targetId) {
-        this.selectedSource = data.selected;
-        this.alternatives = data.alternatives ?? [];
-        this.currentTrack = {
-          ...this.currentTrack,
-          quality: {
-            tier: data.selected.tier,
-            codec: data.selected.codec,
-            bitDepth: data.selected.bitDepth,
-            sampleRate: data.selected.sampleRate,
-            bitrateKbps: data.selected.bitrateKbps,
-            provider: data.selected.provider,
-            verifiedAt: data.selected.verifiedAt,
-          },
-        };
+        this.currentAudio = data;
         this.saveSession();
       }
-      return data.selected;
+      return data;
     } catch {
       return null;
     }

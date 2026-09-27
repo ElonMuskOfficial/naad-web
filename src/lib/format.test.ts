@@ -24,32 +24,10 @@ describe('format helpers', () => {
     expect(formatDurationMs(200_040)).toBe('3:20');
   });
 
-  it('formats quality info for hires, lossless and high', () => {
-    const hires = describeQuality({
-      tier: 'hires',
-      codec: 'flac',
-      bitDepth: 24,
-      sampleRate: 96_000,
-    });
-    expect(hires.tier).toBe('hires');
-    expect(hires.label).toBe('HI-RES · FLAC 24/96');
-
-    const lossless = describeQuality({
-      tier: 'lossless',
-      codec: 'flac',
-      bitDepth: 16,
-      sampleRate: 44_100,
-    });
-    expect(lossless.tier).toBe('lossless');
-    expect(lossless.label).toBe('LOSSLESS · FLAC 16/44.1');
-
-    const high = describeQuality({
-      tier: 'high',
-      codec: 'aac',
-      bitrateKbps: 320,
-    });
-    expect(high.tier).toBe('high');
-    expect(high.label).toBe('AAC 320');
+  it('formats quality info from codec and bitrate', () => {
+    const info = describeQuality({ codec: 'aac', bitrateKbps: 320 });
+    expect(info.label).toBe('AAC 320');
+    expect(info.detail).toBe('AAC, 320 kbps');
   });
 
   it('formats bitrate and sample rate', () => {
