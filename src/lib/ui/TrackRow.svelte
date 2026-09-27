@@ -111,8 +111,6 @@ function handleTouchEnd() {
     <div class="min-w-0 flex-1">
       <p class="truncate font-medium leading-snug" class:text-accent={status !== 'idle'}>
         {track.title}
-        {#if track.versionTags.includes('remix')}<span class="text-ink-faint font-normal"> · Remix</span>{/if}
-        {#if track.versionTags.includes('live')}<span class="text-ink-faint font-normal"> · Live</span>{/if}
       </p>
       <p class="truncate text-xs text-ink-muted">
         {artist}{#if track.explicit}<span
