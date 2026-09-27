@@ -127,15 +127,17 @@ const displayedTrackIds = $derived.by(() => {
 const likedQuery = createLikedContainsQuery(() => displayedTrackIds);
 const likedIds = $derived(likedQuery.data ?? new Set<string>());
 
-function playTrack(track: Track, contextTracks: Track[] = []) {
-  player.playTrack(track, contextTracks.length > 0 ? contextTracks : [track]);
+// Search results are a flat, unordered grab-bag of hits, not a real collection like an album or playlist —
+// JioSaavn itself only ever queues the one clicked song here, never the rest of the visible results.
+function playTrack(track: Track) {
+  player.playTrack(track, [track]);
 }
 
 function handleTopResultClick() {
   const top = searchResults?.topResult;
   if (!top) return;
   if (top.type === 'track') {
-    playTrack(top.item, searchResults?.tracks ?? [top.item]);
+    playTrack(top.item);
   } else if (top.type === 'album') {
     goto(`/album/${top.item.id}`);
   } else if (top.type === 'artist') {
@@ -312,7 +314,7 @@ function handleTopResultClick() {
                     type="button"
                     onclick={(e) => {
                       e.stopPropagation();
-                      playTrack(top.item, searchResults.tracks);
+                      playTrack(top.item);
                     }}
                     class="size-10 rounded-full bg-accent text-surface-0 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
                     aria-label={`Play ${top.item.title}`}
@@ -347,7 +349,7 @@ function handleTopResultClick() {
               {likedIds}
               currentId={player.currentTrack?.id}
               playing={player.status === 'playing'}
-              onplay={(t) => playTrack(t, searchResults.tracks)}
+              onplay={(t) => playTrack(t)}
               onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
             />
           </div>
@@ -445,7 +447,7 @@ function handleTopResultClick() {
           {likedIds}
           currentId={player.currentTrack?.id}
           playing={player.status === 'playing'}
-          onplay={(t) => playTrack(t, searchResults.tracks)}
+          onplay={(t) => playTrack(t)}
           onlike={(t) => toggleLikeTrack(t, likedIds.has(t.id))}
         />
         {@render loadMoreButton()}
