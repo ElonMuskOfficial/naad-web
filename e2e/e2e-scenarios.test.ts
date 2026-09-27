@@ -83,7 +83,6 @@ test.describe('Phase D: End-to-End Scenarios', () => {
     // Verify context menu options
     await expect(page.getByRole('menuitem', { name: /Play next/i })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: /Add to queue/i })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: /Start radio/i })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: /Save to Liked Songs/i })).toBeVisible();
   });
 

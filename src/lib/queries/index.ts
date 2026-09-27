@@ -265,20 +265,6 @@ export function createHistoryQuery(cursor?: MaybeAccessor<string | undefined>) {
   });
 }
 
-export async function fetchRadioTracks(seed: string, limit = 25, exclude?: string[]) {
-  const { data, error } = await api.GET('/v1/radio', {
-    params: {
-      query: {
-        seed,
-        limit,
-        exclude: exclude?.length ? exclude.join(',') : undefined,
-      },
-    },
-  });
-  if (error) throw error;
-  return data.tracks;
-}
-
 /**
  * Toggles a track's liked status via PUT /v1/library/tracks or DELETE /v1/library/tracks,
  * invalidating relevant queries and displaying a notification.

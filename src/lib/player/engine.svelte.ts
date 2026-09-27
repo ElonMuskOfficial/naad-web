@@ -508,31 +508,6 @@ export class PlayerEngine {
     this.rightPanelOpen = !this.rightPanelOpen;
   }
 
-  radioSeed = $state<string | null>(null);
-
-  async startRadio(
-    seedType: 'artist' | 'album' | 'track' | 'playlist',
-    seedId: string,
-    initialTrack?: Track,
-  ) {
-    const seed = `${seedType}:${seedId}`;
-    try {
-      const { fetchRadioTracks } = await import('$lib/queries');
-      const radioTracks = await fetchRadioTracks(seed, 25);
-      if (radioTracks.length > 0) {
-        this.radioSeed = seed;
-        const first = initialTrack ?? radioTracks[0]!;
-        await this.playTrack(first, radioTracks, { type: 'radio', id: seed });
-        toast.push(`Playing radio for ${seedType}`);
-      } else {
-        toast.push('Could not find radio tracks for this selection', { tone: 'danger' });
-      }
-    } catch (err) {
-      console.warn('[PlayerEngine] startRadio error:', err);
-      toast.push('Could not start radio', { tone: 'danger' });
-    }
-  }
-
   addToQueue(track: Track) {
     this.queue = [...this.queue, track];
     this.unshuffledQueue = [...this.unshuffledQueue, track];

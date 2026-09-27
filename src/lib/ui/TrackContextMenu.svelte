@@ -1,7 +1,6 @@
 <script lang="ts">
 import { goto } from '$app/navigation';
 import { useQueryClient } from '@tanstack/svelte-query';
-import Broadcast from 'phosphor-svelte/lib/Broadcast';
 import Disc from 'phosphor-svelte/lib/Disc';
 import Heart from 'phosphor-svelte/lib/Heart';
 import ListPlus from 'phosphor-svelte/lib/ListPlus';
@@ -61,13 +60,6 @@ function handleAddToQueue() {
   trackMenu.close();
 }
 
-function handleStartRadio() {
-  if (!trackMenu.track) return;
-  const track = trackMenu.track;
-  trackMenu.close();
-  player.startRadio('track', track.id, track);
-}
-
 function handleGoToAlbum() {
   if (!trackMenu.track?.album) return;
   const albumId = trackMenu.track.album.id;
@@ -120,11 +112,6 @@ async function handleAddTrackToPlaylist(playlistId: string, playlistTitle: strin
     <MenuItem onSelect={handleAddToQueue}>
       {#snippet icon()}<ListPlus size={16} />{/snippet}
       Add to queue
-    </MenuItem>
-
-    <MenuItem onSelect={handleStartRadio}>
-      {#snippet icon()}<Broadcast size={16} />{/snippet}
-      Start radio
     </MenuItem>
 
     <MenuItem onSelect={handleToggleLike}>

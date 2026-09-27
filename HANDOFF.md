@@ -6,8 +6,9 @@
 > - **Engine:** `D:\Dev\Projects\music\naad` (Node ≥ 22.9, plain JS, Fastify, Redis). Start it with
 >   `PORT=8080 REDIS_URL=… LIBRARY_REDIS_URL=… npm run dev`. `LIBRARY_REDIS_URL` is the persistent library (likes, saved
 >   albums, followed artists, playlists, history) and must not evict; unset, it shares `REDIS_URL`. See its README.
-> - **What `naad` serves:** the JioSaavn catalog (`/v1/home|search|tracks|albums|artists|playlists|radio|art`,
->   `/v1/tracks/{id}/audio|lyrics`) and the library (`/v1/library/*`, user playlists under `/v1/playlists`,
+> - **What `naad` serves:** the JioSaavn catalog (`/v1/home|search|tracks|albums|artists|playlists|art`,
+>   `/v1/tracks/{id}/audio|lyrics`), JioSaavn's own curated radio stations and podcast catalog
+>   (`/v1/stations`, `/v1/podcasts`), and the library (`/v1/library/*`, user playlists under `/v1/playlists`,
 >   `/v1/history`). Errors are Fastify's `{ statusCode, error, message }`.
 > - **UPDATE 2026-09-27: the app now matches naad's real shapes directly, no adapter layer.**
 >   `src/lib/api/compat.ts` (which used to adapt naad's answers into the old multi-provider shapes the
@@ -30,6 +31,10 @@
 >   little because the window is re-ranked, and the app drops repeats by id.
 > - **Removed:** the import feature (`/import`, palette entry, sidebar link). Mixes, `/resolve`, `/stream` and playlist
 >   duplicate were never built in naad and no screen uses them.
+> - **Removed 2026-09-27: "Start radio"** (naad's own hand-built seeded-queue algorithm, `GET /v1/radio?seed=`) — the
+>   artist page's "Radio" button, the track context menu's "Start radio" item, `PlayerEngine.startRadio`/`radioSeed`,
+>   and `fetchRadioTracks` are all gone. naad's `/v1/stations` (JioSaavn's own curated stations, not seeded from a
+>   track/artist/album/playlist) is a separate feature, not a replacement for this one.
 > - **Session data** saved under another engine is wiped once (`src/lib/player/session-version.ts`, `DATA_VERSION`).
 >   Bump `DATA_VERSION` whenever saved ids stop being valid.
 > - **Fixed on the way:** the `L` shortcut toggles (it only ever liked), follow/unfollow refreshes the followed list,

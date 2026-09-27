@@ -421,24 +421,6 @@ export interface paths {
       responses: { 200: { headers: { [name: string]: unknown }; content?: never } };
     };
   };
-  "/v1/radio": {
-    parameters: { query?: never; header?: never; path?: never; cookie?: never };
-    get: {
-      parameters: {
-        query: { seed: string; limit?: number; exclude?: string };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        200: {
-          headers: { [name: string]: unknown };
-          content: { "application/json": { seed: string; tracks: components["schemas"]["Track"][] } };
-        };
-      };
-    };
-  };
   "/v1/player/prefetch": {
     parameters: { query?: never; header?: never; path?: never; cookie?: never };
     post: {

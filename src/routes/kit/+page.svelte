@@ -87,7 +87,7 @@ function toggleLike(id: string) {
     <section class="space-y-4">
       <h2 class="text-2xs uppercase tracking-wider text-ink-faint">Buttons</h2>
       <div class="flex flex-wrap items-center gap-3">
-        <Button variant="solid">Start radio</Button>
+        <Button variant="solid">Play</Button>
         <Button variant="outline">Follow</Button>
         <Button variant="ghost">Cancel</Button>
         <Button variant="danger">Remove</Button>

@@ -16,7 +16,6 @@ import MediaCard from '$lib/ui/MediaCard.svelte';
 import Skeleton from '$lib/ui/Skeleton.svelte';
 import TrackTable from '$lib/ui/TrackTable.svelte';
 import ArrowLeft from 'phosphor-svelte/lib/ArrowLeft';
-import Broadcast from 'phosphor-svelte/lib/Broadcast';
 import Check from 'phosphor-svelte/lib/Check';
 import Heart from 'phosphor-svelte/lib/Heart';
 import Plus from 'phosphor-svelte/lib/Plus';
@@ -69,12 +68,6 @@ async function toggleFollow() {
     following = prev;
   } finally {
     followBusy = false;
-  }
-}
-
-function startArtistRadio() {
-  if (artistQuery.data) {
-    player.startRadio('artist', artistId, artistQuery.data.topTracks?.[0]);
   }
 }
 </script>
@@ -144,7 +137,7 @@ function startArtistRadio() {
           {artist.name}
         </h1>
 
-        <!-- Header Actions: Play Top Tracks, Follow, Radio -->
+        <!-- Header Actions: Play Top Tracks, Follow -->
         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
           {#if (artist.topTracks?.length ?? 0) > 0}
             <Button variant="solid" onclick={playAllTopTracks}>
@@ -166,11 +159,6 @@ function startArtistRadio() {
               <Plus size={16} weight="bold" />
               <span>Follow</span>
             {/if}
-          </Button>
-
-          <Button variant="ghost" onclick={startArtistRadio} title="Start Radio station based on this artist">
-            <Broadcast size={16} weight="light" />
-            <span>Radio</span>
           </Button>
         </div>
       </div>
