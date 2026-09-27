@@ -35,14 +35,15 @@ let items = $state<PlaylistItem[]>([]);
 let draggedIndex = $state<number | null>(null);
 let dragOverIndex = $state<number | null>(null);
 
-// Sync local items with query data
+// Sync local items with query data: naad returns parallel `tracks`/`entries` arrays for the user's
+// own playlist (same order, same length), and only `tracks` for an external (JioSaavn) one.
 $effect(() => {
   const tracks = playlistQuery.data?.tracks;
   const entries = playlistQuery.data?.entries;
-  if (tracks && entries) {
-    items = tracks.map((track, idx) => ({
-      itemId: entries[idx]!.itemId,
-      addedAt: entries[idx]!.addedAt,
+  if (tracks) {
+    items = tracks.map((track, i) => ({
+      itemId: entries?.[i]?.itemId ?? `${playlistId}:${i}`,
+      addedAt: entries?.[i]?.addedAt ?? new Date(0).toISOString(),
       track,
     }));
   }
