@@ -37,13 +37,19 @@ let dragOverIndex = $state<number | null>(null);
 
 // Sync local items with query data
 $effect(() => {
-  if (playlistQuery.data?.items?.items) {
-    items = [...playlistQuery.data.items.items];
+  const tracks = playlistQuery.data?.tracks;
+  const entries = playlistQuery.data?.entries;
+  if (tracks && entries) {
+    items = tracks.map((track, idx) => ({
+      itemId: entries[idx]!.itemId,
+      addedAt: entries[idx]!.addedAt,
+      track,
+    }));
   }
 });
 
 const isEditablePlaylist = $derived(
-  playlistQuery.data?.origin === 'user' || playlistQuery.data?.origin === 'import',
+  playlistQuery.data?.origin === 'user',
 );
 
 // Inline editing state
@@ -255,7 +261,7 @@ async function executeMove(fromIndex: number, toIndex: number) {
 
       <div class="flex flex-col items-center sm:items-start min-w-0 flex-1 text-center sm:text-left">
         <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
-          Playlist · {pl.origin === 'user' ? 'Library' : pl.origin === 'import' ? 'Imported' : pl.origin}
+          Playlist · {pl.origin === 'user' ? 'Library' : 'JioSaavn'}
         </span>
 
         {#if isEditing}
@@ -341,12 +347,12 @@ async function executeMove(fromIndex: number, toIndex: number) {
         <!-- Table Column Headers -->
         <div
           class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint border-b border-border max-sm:hidden"
-          style="grid-template-columns: 28px 28px minmax(0, 1fr) 150px 20px 48px 48px"
+          style="grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px 48px auto"
         >
           <span></span>
           <span class="text-right" data-numeric>#</span>
           <span>Title</span>
-          <span>Quality</span>
+          <span></span>
           <span></span>
           <span class="text-right">Time</span>
           <span class="text-right">Actions</span>

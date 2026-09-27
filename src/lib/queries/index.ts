@@ -102,7 +102,7 @@ export async function fetchLikedSet(trackIds: string[]): Promise<Set<string>> {
 }
 
 /** The playlists a track can be added to: naad only accepts additions to the user's own (JioSaavn ones are read-only). */
-export function userPlaylists<T extends { origin: string }>(playlists: T[]): T[] {
+export function userPlaylists<T extends { origin?: "user" | "external" }>(playlists: T[]): T[] {
   return playlists.filter((p) => p.origin === 'user');
 }
 

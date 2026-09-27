@@ -260,7 +260,7 @@ function formatRelativeTime(isoString: string): string {
         {#each playlistsQuery.data as playlist (playlist.id)}
           <MediaCard
             title={playlist.title}
-            subtitle={`${playlist.trackCount} ${playlist.trackCount === 1 ? 'track' : 'tracks'} · ${playlist.origin === 'user' ? 'Library' : playlist.origin === 'import' ? 'Imported' : playlist.origin}`}
+            subtitle={`${playlist.trackCount} ${playlist.trackCount === 1 ? 'track' : 'tracks'} · ${playlist.origin === 'user' ? 'Library' : 'JioSaavn'}`}
             image={playlist.images?.[0]?.url}
             href={`/playlist/${playlist.id}`}
           />
