@@ -1,4 +1,5 @@
 import { formatIsoWithOffset } from './math';
+import { getStoredEngineUrl } from '$lib/api/client';
 
 export interface ListenContext {
   type: string;
@@ -113,7 +114,8 @@ export class HistoryTracker {
     }
 
     if (typeof fetch !== 'undefined') {
-      fetch('/v1/history', {
+      const base = getStoredEngineUrl() ?? '';
+      fetch(`${base}/v1/history`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ listens: itemsToSend }),

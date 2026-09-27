@@ -8,6 +8,21 @@ describe('HistoryTracker', () => {
     vi.useFakeTimers();
     fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
     vi.stubGlobal('fetch', fetchSpy);
+
+    const mockLocalStorage = {
+      data: {} as Record<string, string>,
+      getItem: (key: string) => mockLocalStorage.data[key] ?? null,
+      setItem: (key: string, value: string) => {
+        mockLocalStorage.data[key] = value;
+      },
+      removeItem: (key: string) => {
+        delete mockLocalStorage.data[key];
+      },
+      clear: () => {
+        mockLocalStorage.data = {};
+      },
+    };
+    vi.stubGlobal('localStorage', mockLocalStorage);
   });
 
   afterEach(() => {
@@ -67,5 +82,19 @@ describe('HistoryTracker', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(tracker.getPendingCount()).toBe(0);
     tracker.destroy();
+  });
+
+  it('flushes to the configured Engine URL, not the page origin, when one is set', () => {
+    localStorage.setItem('naad:engineUrl', 'https://remote-engine.example');
+    const tracker = new HistoryTracker();
+    tracker.record({ trackId: 'trk_remote', msPlayed: 15000 });
+    tracker.flush();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://remote-engine.example/v1/history',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    tracker.destroy();
+    localStorage.removeItem('naad:engineUrl');
   });
 });
