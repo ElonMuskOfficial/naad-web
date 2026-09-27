@@ -82,7 +82,7 @@ const homeQuery = createHomeQuery();
                 image={bestImageUrl(track.images, 300) ?? bestImageUrl(track.album?.images, 300)}
                 size={148}
                 rank={section.id.includes('top') || section.id.includes('chart') ? idx + 1 : undefined}
-                onplay={() => player.playTrack(track, section.items as Track[])}
+                onplay={() => player.playTrack(track, [track])}
               />
             {/each}
           {:else if section.kind === 'albums'}
