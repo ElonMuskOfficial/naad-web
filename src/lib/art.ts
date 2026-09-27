@@ -76,3 +76,24 @@ export function artUrl(src?: string | null, size?: number): string | undefined {
   }
   return `/v1/art?${params.toString()}`;
 }
+
+/**
+ * Like `artUrl`, but always proxies through `/v1/art`, even for saavncdn.com sources — the one thing
+ * the proxy exists to guarantee is a CORS-readable response, and JioSaavn's own CDN sends no CORS
+ * headers (see naad/routes/v1/art/index.js). Use this, not `artUrl`, wherever the image will be read
+ * off a canvas (ambient color extraction) rather than just displayed.
+ */
+export function corsArtUrl(src?: string | null, size?: number): string | undefined {
+  if (!src) return undefined;
+  if (src.startsWith('/') || src.startsWith('data:') || src.startsWith('blob:')) {
+    return src;
+  }
+  const upgradedSrc = upgradeImageUrl(src, size ? Math.max(size, 400) : 600) ?? src;
+  const params = new URLSearchParams();
+  params.set('src', upgradedSrc);
+  if (size && size > 0) {
+    const renderSize = Math.max(Math.round(size * 1.5), 160);
+    params.set('size', String(renderSize));
+  }
+  return `/v1/art?${params.toString()}`;
+}

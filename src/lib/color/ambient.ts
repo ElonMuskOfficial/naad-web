@@ -1,4 +1,4 @@
-import { artUrl } from '$lib/art';
+import { corsArtUrl } from '$lib/art';
 
 export interface AmbientPalette {
   ambient1: string; // Primary ambient color: rgb(r, g, b)
@@ -195,7 +195,7 @@ export async function extractAmbientPalette(src: string): Promise<AmbientPalette
     };
 
     // Load via the artwork proxy at 64px for fast, CORS-enabled reading
-    img.src = artUrl(src, 64) ?? src;
+    img.src = corsArtUrl(src, 64) ?? src;
   });
 }
 
