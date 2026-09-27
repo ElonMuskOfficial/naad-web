@@ -170,7 +170,7 @@ function handleTopResultClick() {
         value={queryInput}
         oninput={handleInput}
         placeholder="Search songs, artists, albums, or playlists..."
-        class="w-full h-11 pl-11 pr-10 rounded-xs bg-surface-1 border border-border text-ink text-sm sm:text-base placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+        class="w-full h-11 pl-11 pr-10 rounded-xs bg-surface-1 border border-border text-ink text-sm sm:text-base placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
         autocomplete="off"
         spellcheck="false"
         aria-label="Search"
