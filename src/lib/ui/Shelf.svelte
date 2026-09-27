@@ -33,41 +33,6 @@ function scrollByAmount(direction: -1 | 1) {
   const cardWidth = 320;
   scrollerEl.scrollBy({ left: direction * cardWidth * 1.5, behavior: 'smooth' });
 }
-
-let isPointerDown = $state(false);
-let startX = 0;
-let startScrollLeft = 0;
-let hasMoved = $state(false);
-
-function handlePointerDown(e: PointerEvent) {
-  if (e.pointerType !== 'mouse' || e.button !== 0 || !scrollerEl) return;
-  isPointerDown = true;
-  hasMoved = false;
-  startX = e.pageX;
-  startScrollLeft = scrollerEl.scrollLeft;
-}
-
-function handlePointerMove(e: PointerEvent) {
-  if (!isPointerDown || !scrollerEl) return;
-  const dx = e.pageX - startX;
-  if (Math.abs(dx) > 6) {
-    hasMoved = true;
-  }
-  scrollerEl.scrollLeft = startScrollLeft - dx;
-  updateScrollButtons();
-}
-
-function handlePointerUp() {
-  isPointerDown = false;
-}
-
-function handleClickCapture(e: MouseEvent) {
-  if (hasMoved) {
-    e.stopPropagation();
-    e.preventDefault();
-    hasMoved = false;
-  }
-}
 </script>
 
 <section class="group/shelf relative min-w-0">
@@ -102,18 +67,10 @@ function handleClickCapture(e: MouseEvent) {
       </div>
     </div>
   </div>
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={scrollerEl}
     onscroll={updateScrollButtons}
-    onpointerdown={handlePointerDown}
-    onpointermove={handlePointerMove}
-    onpointerup={handlePointerUp}
-    onpointercancel={handlePointerUp}
-    onclickcapture={handleClickCapture}
-    class="flex gap-4 overflow-x-auto pb-1 pl-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden overscroll-x-contain will-change-[scroll-position]"
-    class:cursor-grab={!isPointerDown}
-    class:cursor-grabbing={isPointerDown}
+    class="flex gap-4 overflow-x-auto pb-1 pl-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
   >
     {@render children()}
   </div>

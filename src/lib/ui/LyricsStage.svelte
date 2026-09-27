@@ -75,10 +75,6 @@ function handleScroll() {
       <Skeleton class="h-5 w-1/2 rounded-xs" />
       <Skeleton class="h-5 w-4/5 rounded-xs" />
     </div>
-  {:else if lyricsQuery.isError}
-    <div class="py-12 text-center text-xs text-ink-muted">
-      Unable to load lyrics for this track.
-    </div>
   {:else if validLines.length > 0}
     <!-- Synced Lyrics Stage (Spotify-style line-by-line sync) -->
     <div class="flex flex-col w-full max-w-full {size === 'sm' ? 'gap-3 py-10' : 'gap-4 sm:gap-5 max-w-2xl py-20'}">
@@ -110,23 +106,12 @@ function handleScroll() {
         </button>
       {/each}
     </div>
-  {:else if lyricsQuery.data?.plain}
-    <!-- Plain Static Lyrics Fallback -->
-    <div class="w-full max-w-full py-6 flex flex-col gap-4">
-      <div class="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-xs border border-border/60 bg-surface-1/80 w-fit text-ink-muted">
-        <span class="size-1.5 rounded-full bg-ink-faint" aria-hidden="true"></span>
-        <span class="font-mono text-2xs uppercase tracking-wider text-ink-muted">Plain lyrics · Time sync unavailable</span>
-      </div>
-      <p class="font-sans text-sm sm:text-base text-ink/90 leading-relaxed whitespace-pre-line select-text break-words">
-        {lyricsQuery.data.plain}
-      </p>
-    </div>
   {:else}
-    <!-- Quiet Empty State -->
+    <!-- Quiet Empty State when there are no synced lyrics or track has no lyrics -->
     <div class="py-12">
       <EmptyState
         title="No lyrics found"
-        description="Synced or plain lyrics have not been indexed for this recording."
+        description="Synced lyrics have not been indexed for this recording."
       />
     </div>
   {/if}
