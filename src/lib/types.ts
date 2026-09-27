@@ -8,4 +8,5 @@ export type Image = Track['images'][number];
 export type Playlist = components['schemas']['Playlist'];
 export type Audio = components['schemas']['Audio'];
 export type Section = components['schemas']['Section'];
+export type SectionItem = components['schemas']['SectionItem'];
 export type Problem = components['schemas']['Problem'];

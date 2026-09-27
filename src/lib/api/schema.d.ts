@@ -515,17 +515,19 @@ export interface components {
       origin?: "user" | "external";
       inLibrary?: boolean;
     };
-    Section:
-      | { id: string; title: string; subtitle?: string; kind: "tracks"; items: components["schemas"]["Track"][] }
-      | { id: string; title: string; subtitle?: string; kind: "albums"; items: components["schemas"]["Album"][] }
-      | { id: string; title: string; subtitle?: string; kind: "artists"; items: components["schemas"]["Artist"][] }
-      | {
-          id: string;
-          title: string;
-          subtitle?: string;
-          kind: "playlists";
-          items: components["schemas"]["Playlist"][];
-        };
+    /** A home shelf item, tagged with its own kind — a section mixes kinds in JioSaavn's own order,
+     *  just like JioSaavn's homepage itself does (never split into one shelf per kind). */
+    SectionItem:
+      | { kind: "track"; item: components["schemas"]["Track"] }
+      | { kind: "album"; item: components["schemas"]["Album"] }
+      | { kind: "artist"; item: components["schemas"]["Artist"] }
+      | { kind: "playlist"; item: components["schemas"]["Playlist"] };
+    Section: {
+      id: string;
+      title: string;
+      subtitle?: string;
+      items: components["schemas"]["SectionItem"][];
+    };
     /** naad's plain Fastify error body: `{ statusCode, error, message }`. See `client.ts`'s `ApiError`. */
     Problem: {
       statusCode: number;

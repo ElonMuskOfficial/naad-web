@@ -4,7 +4,6 @@ import { bestImageUrl } from '$lib/art';
 import { joinArtists } from '$lib/format';
 import { player } from '$lib/player/engine.svelte';
 import { createHomeQuery } from '$lib/queries';
-import type { Album, Artist, Playlist, Track } from '$lib/types';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
@@ -68,13 +67,14 @@ const homeQuery = createHomeQuery();
       </Button>
     </div>
   {:else if homeQuery.data?.sections && homeQuery.data.sections.length > 0}
-    <!-- Render all sections by kind exhaustively -->
+    <!-- Each shelf mixes kinds in JioSaavn's own order (a homepage module is rarely one kind alone) —
+         render every item by its own tagged kind rather than picking one kind for the whole shelf. -->
     <div class="flex flex-col gap-8">
       {#each homeQuery.data.sections as section (section.id)}
         <Shelf title={section.title}>
-          {#if section.kind === 'tracks'}
-            {#each section.items as item, idx (item.id)}
-              {@const track = item as Track}
+          {#each section.items as entry, idx (`${entry.kind}:${entry.item.id}`)}
+            {#if entry.kind === 'track'}
+              {@const track = entry.item}
               <MediaCard
                 href={track.album ? `/album/${track.album.id}` : '#'}
                 title={track.title}
@@ -82,12 +82,10 @@ const homeQuery = createHomeQuery();
                 image={bestImageUrl(track.images, 300) ?? bestImageUrl(track.album?.images, 300)}
                 size={148}
                 rank={section.id.includes('top') || section.id.includes('chart') ? idx + 1 : undefined}
-                onplay={() => player.playTrack(track, section.items as Track[])}
+                onplay={() => player.playTrack(track, [track])}
               />
-            {/each}
-          {:else if section.kind === 'albums'}
-            {#each section.items as item (item.id)}
-              {@const album = item as Album}
+            {:else if entry.kind === 'album'}
+              {@const album = entry.item}
               <MediaCard
                 href={`/album/${album.id}`}
                 title={album.title}
@@ -95,10 +93,8 @@ const homeQuery = createHomeQuery();
                 image={bestImageUrl(album.images, 300)}
                 size={148}
               />
-            {/each}
-          {:else if section.kind === 'artists'}
-            {#each section.items as item (item.id)}
-              {@const artist = item as Artist}
+            {:else if entry.kind === 'artist'}
+              {@const artist = entry.item}
               <MediaCard
                 href={`/artist/${artist.id}`}
                 title={artist.name}
@@ -107,10 +103,8 @@ const homeQuery = createHomeQuery();
                 image={bestImageUrl(artist.images, 300)}
                 size={148}
               />
-            {/each}
-          {:else if section.kind === 'playlists'}
-            {#each section.items as item (item.id)}
-              {@const playlist = item as Playlist}
+            {:else if entry.kind === 'playlist'}
+              {@const playlist = entry.item}
               <MediaCard
                 href={`/playlist/${playlist.id}`}
                 title={playlist.title}
@@ -118,8 +112,8 @@ const homeQuery = createHomeQuery();
                 image={bestImageUrl(playlist.images, 300)}
                 size={148}
               />
-            {/each}
-          {/if}
+            {/if}
+          {/each}
         </Shelf>
       {/each}
     </div>
