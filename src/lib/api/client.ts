@@ -1,44 +1,34 @@
 import createClient, { type Middleware } from 'openapi-fetch';
-import { adaptResponse, rewriteSourcesUrl, toProblem } from './compat';
 import type { paths } from './schema';
 
 export const API_KEY_STORAGE_KEY = 'naad:apiKey';
 export const ENGINE_URL_STORAGE_KEY = 'naad:engineUrl';
 
 export interface ProblemDetail {
-  type?: string;
-  title?: string;
   status: number;
+  title?: string;
   detail?: string;
-  instance?: string;
-  requestId?: string;
-  errors?: Array<{ path: string; message: string }>;
 }
 
-export function extractErrorCode(type: string | undefined, status: number): string {
-  if (!type) return String(status);
-  const parts = type.split(/[/:]/);
-  const last = parts[parts.length - 1];
-  return last && last.length > 0 ? last : String(status);
+/** naad's plain Fastify error body is `{ statusCode, error, message }`; there is no other shape. */
+function toProblem(body: unknown, status: number): ProblemDetail {
+  if (typeof body !== 'object' || body === null) return { status };
+  const b = body as Record<string, unknown>;
+  return {
+    status: typeof b.statusCode === 'number' ? b.statusCode : status,
+    title: typeof b.error === 'string' ? b.error : undefined,
+    detail: typeof b.message === 'string' ? b.message : undefined,
+  };
 }
 
 export class ApiError extends Error {
   readonly status: number;
-  readonly code: string;
-  readonly detail?: string;
-  readonly requestId?: string;
-  readonly errors?: Array<{ path: string; message: string }>;
   readonly title?: string;
 
   constructor(problem: ProblemDetail) {
-    const code = extractErrorCode(problem.type, problem.status);
-    super(problem.detail ?? problem.title ?? code);
+    super(problem.detail ?? problem.title ?? String(problem.status));
     this.name = 'ApiError';
     this.status = problem.status;
-    this.code = code;
-    this.detail = problem.detail;
-    this.requestId = problem.requestId;
-    this.errors = problem.errors;
     this.title = problem.title;
   }
 }
@@ -77,18 +67,14 @@ export function setStoredEngineUrl(url: string | null): void {
 
 export function createAuthMiddleware(getApiKey: () => string | null = getStoredApiKey): Middleware {
   return {
-    async onRequest({ request, schemaPath }) {
+    async onRequest({ request }) {
       const key = getApiKey();
       if (key && !request.headers.has('authorization')) {
         request.headers.set('authorization', `Bearer ${key}`);
       }
-      // naad has one playback endpoint, /audio; the app asks for /sources (see compat.ts).
-      if (schemaPath === '/v1/tracks/{id}/sources') {
-        return new Request(rewriteSourcesUrl(new URL(request.url)), request);
-      }
       return request;
     },
-    async onResponse({ request, response, schemaPath }) {
+    async onResponse({ response }) {
       if (response.status === 401 && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('naad:unauthorized'));
         if (window.location.pathname !== '/settings') {
@@ -103,29 +89,12 @@ export function createAuthMiddleware(getApiKey: () => string | null = getStoredA
           try {
             problem = toProblem(await response.clone().json(), response.status);
           } catch {
-            // response was not JSON, fallback to basic status
+            // response was not JSON, fall back to a bare status
           }
         }
         throw new ApiError(problem);
       }
 
-      // Adapt what naad sends to what the app consumes. Empty bodies (naad answers mutations with an empty 200)
-      // and non-JSON bodies pass through untouched.
-      if ((response.headers.get('content-type') ?? '').includes('json')) {
-        try {
-          const json = await response.clone().json();
-          const headers = new Headers(response.headers);
-          headers.delete('content-length');
-          headers.delete('content-encoding');
-          return new Response(JSON.stringify(adaptResponse(schemaPath, json, request.url)), {
-            status: response.status,
-            statusText: response.statusText,
-            headers,
-          });
-        } catch {
-          return response;
-        }
-      }
       return response;
     },
   };
