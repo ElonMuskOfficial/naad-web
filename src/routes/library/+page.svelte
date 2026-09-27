@@ -11,6 +11,8 @@ import {
   createLibraryPlaylistsQuery,
   createLikedTracksQuery,
   createSavedAlbumsQuery,
+  playAlbumById,
+  playPlaylistById,
   queryClient,
   toggleLikeTrack,
 } from '$lib/queries';
@@ -263,6 +265,7 @@ function formatRelativeTime(isoString: string): string {
             subtitle={`${playlist.trackCount} ${playlist.trackCount === 1 ? 'track' : 'tracks'} · ${playlist.origin === 'user' ? 'Library' : 'JioSaavn'}`}
             image={playlist.images?.[0]?.url}
             href={`/playlist/${playlist.id}`}
+            onplay={() => playPlaylistById(playlist.id)}
           />
         {/each}
       </div>
@@ -337,6 +340,7 @@ function formatRelativeTime(isoString: string): string {
             subtitle={item.album.artists.map((a) => a.name).join(', ')}
             image={item.album.images?.[0]?.url}
             href={`/album/${item.album.id}`}
+            onplay={() => playAlbumById(item.album.id)}
           />
         {/each}
       </div>

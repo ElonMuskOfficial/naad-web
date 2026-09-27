@@ -5,6 +5,7 @@ import {
   createArtistQuery,
   createFollowedArtistsQuery,
   createLikedContainsQuery,
+  playAlbumById,
   toggleFollowArtist,
 } from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
@@ -218,6 +219,7 @@ function startArtistRadio() {
               subtitle={album.releaseDate ? album.releaseDate.slice(0, 4) : 'Album'}
               image={album.images?.[0]?.url}
               href={`/album/${album.id}`}
+              onplay={() => playAlbumById(album.id)}
             />
           {/each}
         </div>
@@ -239,6 +241,7 @@ function startArtistRadio() {
               subtitle={single.releaseDate ? single.releaseDate.slice(0, 4) : 'Single'}
               image={single.images?.[0]?.url}
               href={`/album/${single.id}`}
+              onplay={() => playAlbumById(single.id)}
             />
           {/each}
         </div>

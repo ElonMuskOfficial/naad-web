@@ -3,7 +3,7 @@ import { goto } from '$app/navigation';
 import { bestImageUrl } from '$lib/art';
 import { joinArtists } from '$lib/format';
 import { player } from '$lib/player/engine.svelte';
-import { createHomeQuery } from '$lib/queries';
+import { createHomeQuery, playAlbumById, playPlaylistById } from '$lib/queries';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
@@ -92,6 +92,7 @@ const homeQuery = createHomeQuery();
                 subtitle={album.releaseDate ? album.releaseDate.slice(0, 4) : (album.artists?.length ? joinArtists(album.artists) : undefined)}
                 image={bestImageUrl(album.images, 300)}
                 size={148}
+                onplay={() => playAlbumById(album.id)}
               />
             {:else if entry.kind === 'artist'}
               {@const artist = entry.item}
@@ -111,6 +112,7 @@ const homeQuery = createHomeQuery();
                 subtitle={playlist.description ?? (playlist.trackCount ? `${playlist.trackCount} tracks` : undefined)}
                 image={bestImageUrl(playlist.images, 300)}
                 size={148}
+                onplay={() => playPlaylistById(playlist.id)}
               />
             {/if}
           {/each}

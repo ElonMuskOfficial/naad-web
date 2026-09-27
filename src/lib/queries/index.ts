@@ -1,5 +1,6 @@
 import { createQuery, QueryClient } from '@tanstack/svelte-query';
 import { api } from '$lib/api/client';
+import { player } from '$lib/player/engine.svelte';
 import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
 
@@ -359,4 +360,32 @@ export async function toggleLikeCurrent(track: Track): Promise<boolean> {
     throw err;
   }
   return toggleLikeTrack(track, isLiked);
+}
+
+/**
+ * Plays an album straight from its card (home shelf, search results, library, an artist's
+ * discography, ...) — matching JioSaavn, which plays an album directly from its own card rather
+ * than requiring a visit to the album page first. The card only has the album's own metadata, so
+ * this fetches its tracks on demand before handing them to the player.
+ */
+export async function playAlbumById(id: string): Promise<void> {
+  try {
+    const { data, error } = await api.GET('/v1/albums/{id}', { params: { path: { id } } });
+    if (error || !data.tracks.length) throw error ?? new Error('empty album');
+    player.playTrack(data.tracks[0]!, data.tracks);
+  } catch {
+    toast.push('Could not play this album', { tone: 'danger' });
+  }
+}
+
+/** Same as {@link playAlbumById}, for a playlist card. Plays whatever the first page holds. */
+export async function playPlaylistById(id: string): Promise<void> {
+  try {
+    const { data, error } = await api.GET('/v1/playlists/{id}', { params: { path: { id } } });
+    const tracks = data?.tracks ?? [];
+    if (error || !tracks.length) throw error ?? new Error('empty playlist');
+    player.playTrack(tracks[0]!, tracks);
+  } catch {
+    toast.push('Could not play this playlist', { tone: 'danger' });
+  }
 }

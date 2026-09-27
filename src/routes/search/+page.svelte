@@ -2,7 +2,14 @@
 import { page } from '$app/state';
 import { goto, replaceState } from '$app/navigation';
 import { bestImageUrl } from '$lib/art';
-import { createLikedContainsQuery, createSearchQuery, toggleLikeTrack, type SearchType } from '$lib/queries';
+import {
+  createLikedContainsQuery,
+  createSearchQuery,
+  playAlbumById,
+  playPlaylistById,
+  toggleLikeTrack,
+  type SearchType,
+} from '$lib/queries';
 import { player } from '$lib/player/engine.svelte';
 import {
   appendSearchPage,
@@ -376,6 +383,7 @@ function handleTopResultClick() {
                 subtitle={album.artists.map((a) => a.name).join(', ')}
                 image={bestImageUrl(album.images, 300)}
                 href={`/album/${album.id}`}
+                onplay={() => playAlbumById(album.id)}
               />
             {/each}
           </div>
@@ -429,6 +437,7 @@ function handleTopResultClick() {
                 subtitle={playlist.description ?? 'Playlist'}
                 image={bestImageUrl(playlist.images, 300)}
                 href={`/playlist/${playlist.id}`}
+                onplay={() => playPlaylistById(playlist.id)}
               />
             {/each}
           </div>
@@ -465,6 +474,7 @@ function handleTopResultClick() {
               subtitle={album.artists.map((a) => a.name).join(', ')}
               image={bestImageUrl(album.images, 300)}
               href={`/album/${album.id}`}
+              onplay={() => playAlbumById(album.id)}
             />
           {/each}
         </div>
@@ -502,6 +512,7 @@ function handleTopResultClick() {
               subtitle={playlist.description ?? 'Playlist'}
               image={bestImageUrl(playlist.images, 300)}
               href={`/playlist/${playlist.id}`}
+              onplay={() => playPlaylistById(playlist.id)}
             />
           {/each}
         </div>
