@@ -1,10 +1,9 @@
 node_modules/
-.env
-.env.*
 !.env.example
 /build/
 /.svelte-kit/
 /package/
+temp_auto_push.bat
 dev-dist/
 *.log
 coverage/
@@ -13,3 +12,6 @@ test-results/
 playwright-report/
 screenshots/
 .DS_Store
+.gitignore
+branch_structure.json
+config.bat
