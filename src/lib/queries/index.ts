@@ -391,11 +391,12 @@ export function createStationsQuery(language?: MaybeAccessor<string | undefined>
   });
 }
 
-/** Starts one of JioSaavn's curated stations (by the `name` a listing gave you) and plays its first batch. */
-export async function playStation(name: string, language?: string | null): Promise<void> {
+/** Starts one of JioSaavn's curated stations (by the `id` a listing gave you — JioSaavn's own internal,
+ *  romanized station name, not the localized display title) and plays its first batch. */
+export async function playStation(id: string, language?: string | null): Promise<void> {
   try {
     const { data: created, error: createError } = await api.POST('/v1/stations', {
-      body: { name, language: language ?? undefined },
+      body: { name: id, language: language ?? undefined },
     });
     if (createError || !created?.stationId) throw createError ?? new Error('could not start station');
     const { data: songs, error: songsError } = await api.GET('/v1/stations/{id}/songs', {

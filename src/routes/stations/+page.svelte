@@ -29,7 +29,9 @@ async function handlePlay(station: { id: string; name: string; language: string 
   if (startingId) return;
   startingId = station.id;
   try {
-    await playStation(station.name, station.language);
+    // `id` is JioSaavn's own internal (romanized) station name — what `playStation` must send upstream to
+    // resolve the station. `name` is only the localized display title and won't resolve it.
+    await playStation(station.id, station.language);
   } finally {
     startingId = null;
   }
