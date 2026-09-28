@@ -80,7 +80,10 @@ function onWindowKeydown(e: KeyboardEvent) {
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>
-  <div class="flex h-screen w-screen overflow-hidden bg-surface-0 text-ink">
+  <!-- h-dvh, not h-screen: 100vh is measured with the browser chrome (address bar) collapsed, so on a
+       real mobile device — chrome visible on load — that made this container taller than what's actually
+       visible, and overflow-hidden clipped the bottom-docked MobileMiniPlayer/MobileNav off-screen. -->
+  <div class="flex h-dvh w-screen overflow-hidden bg-surface-0 text-ink">
     <!-- Desktop Sidebar (hidden on now-playing or below sm) -->
     {#if !isNowPlaying}
       <Sidebar />
