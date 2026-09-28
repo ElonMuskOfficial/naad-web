@@ -83,34 +83,39 @@ function onWindowKeydown(e: KeyboardEvent) {
   <!-- h-dvh, not h-screen: 100vh is measured with the browser chrome (address bar) collapsed, so on a
        real mobile device — chrome visible on load — that made this container taller than what's actually
        visible, and overflow-hidden clipped the bottom-docked MobileMiniPlayer/MobileNav off-screen. -->
-  <div class="flex h-dvh w-screen overflow-hidden bg-surface-0 text-ink">
-    <!-- Desktop Sidebar (hidden on now-playing or below sm) -->
-    {#if !isNowPlaying}
-      <Sidebar />
-    {/if}
+  <div class="flex h-dvh w-screen flex-col overflow-hidden bg-surface-0 text-ink">
+    <!-- Upper Row: Sidebar + Scrollable Content + Right Panel, side by side above the full-width player bar -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+      <!-- Desktop Sidebar (hidden on now-playing or below sm) -->
+      {#if !isNowPlaying}
+        <Sidebar />
+      {/if}
 
-    <!-- Center Column: Scrollable Content + Player Bar / Mobile Nav -->
-    <div class="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
-      <!-- Main Content Area -->
-      <main bind:this={mainEl} class="flex-1 min-w-0 overflow-y-auto bg-surface-0">
-        {@render children()}
-      </main>
+      <!-- Center Column: Scrollable Content + Mobile Nav -->
+      <div class="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
+        <!-- Main Content Area -->
+        <main bind:this={mainEl} class="flex-1 min-w-0 overflow-y-auto bg-surface-0">
+          {@render children()}
+        </main>
+
+        {#if !isNowPlaying}
+          <!-- Mobile Mini-Player (docked above bottom nav) -->
+          <MobileMiniPlayer />
+
+          <!-- Mobile Bottom Navigation (56px) -->
+          <MobileNav />
+        {/if}
+      </div>
 
       {#if !isNowPlaying}
-        <!-- Desktop Player Bar (72px, fixed at bottom) -->
-        <PlayerBar />
-
-        <!-- Mobile Mini-Player (docked above bottom nav) -->
-        <MobileMiniPlayer />
-
-        <!-- Mobile Bottom Navigation (56px) -->
-        <MobileNav />
+        <!-- Desktop Collapsible Right Panel (hidden below lg) -->
+        <RightPanel />
       {/if}
     </div>
 
     {#if !isNowPlaying}
-      <!-- Desktop Collapsible Right Panel (hidden below lg) -->
-      <RightPanel />
+      <!-- Desktop Player Bar (72px, full page width, fixed at bottom) -->
+      <PlayerBar />
     {/if}
   </div>
 

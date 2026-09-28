@@ -29,7 +29,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
 </script>
 
 <footer
-  class="relative flex h-[72px] shrink-0 items-center justify-between border-t border-border bg-surface-1 px-4 select-none max-sm:hidden"
+  class="relative grid h-[72px] shrink-0 grid-cols-[1fr_2fr_1fr] items-center gap-4 border-t border-border bg-surface-1 px-4 select-none max-sm:hidden"
   aria-label="Audio Player"
 >
   <!-- Ambient top edge tint: exactly the thin top edge tinted with --ambient-1 from the spec -->
@@ -38,9 +38,12 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     aria-hidden="true"
   ></div>
 
-  <!-- Left: Artwork & Track info. flex-1/min-w-0 (not a fixed width) so it actually shrinks under
-       pressure — the title/artist beneath are already truncate, so they have somewhere to give. -->
-  <div class="flex flex-1 min-w-0 max-w-[260px] items-center gap-3">
+  <!-- Left: Artwork & Track info. This is a grid column (1fr, see footer), not a flexed/max-width box:
+       a fixed max-width can't track "correct" across viewport sizes — too tight on a wide window, too
+       loose on a narrow one — where an fr share of the row scales with it by construction. min-w-0 so
+       the title/artist beneath (already truncate) can still shrink below their content size instead of
+       forcing the column wider. -->
+  <div class="flex min-w-0 items-center gap-3">
     {#if player.currentTrack}
       <a
         href={`/now-playing/${player.currentTrack.id}`}
@@ -49,13 +52,13 @@ function toggleTab(tab: 'queue' | 'lyrics') {
         <Artwork
           src={bestImageUrl(player.currentTrack.images, 120) ?? bestImageUrl(player.currentTrack.album?.images, 120)}
           alt={player.currentTrack.title}
-          size={48}
+          size={56}
         />
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-ink leading-snug hover:underline">
+          <p class="truncate text-base font-semibold text-ink leading-snug hover:underline">
             {player.currentTrack.title}
           </p>
-          <p class="truncate text-xs text-ink-muted leading-tight mt-0.5">
+          <p class="truncate text-sm text-ink-muted leading-tight mt-0.5">
             {joinArtists(player.currentTrack.artists)}
           </p>
         </div>
@@ -72,12 +75,12 @@ function toggleTab(tab: 'queue' | 'lyrics') {
       </button>
     {:else}
       <div class="flex min-w-0 flex-1 items-center gap-3 select-none opacity-60">
-        <Artwork size={48} alt="No track" />
+        <Artwork size={56} alt="No track" />
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-ink-muted leading-snug">
+          <p class="truncate text-base font-semibold text-ink-muted leading-snug">
             No track selected
           </p>
-          <p class="truncate text-xs text-ink-faint leading-tight mt-0.5">
+          <p class="truncate text-sm text-ink-faint leading-tight mt-0.5">
             —
           </p>
         </div>
@@ -85,11 +88,14 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     {/if}
   </div>
 
-  <!-- Center: Transport controls & Scrubber. min-w-[176px] is the transport row's own real minimum (5
-       icon buttons + their gaps, empirically measured) — a plain min-w-0 let this column shrink past that
-       floor and the buttons overflowed their box, overlapping the volume column next to it. Only the
-       Scrubber below has anywhere left to give (its own track is separately flex-1), so it does. -->
-  <div class="flex flex-1 min-w-[176px] max-w-xl flex-col items-center justify-center gap-1 px-4">
+  <!-- Center: Transport controls & Scrubber. This grid column gets the larger 2fr share so it dominates
+       the row and stays visually centered (the two 1fr side columns are equal, so this one is always
+       exactly centered regardless of how much content each side is showing). min-w-[176px] is the
+       transport row's own real minimum (5 icon buttons + their gaps, empirically measured) — the grid
+       column would otherwise shrink past that floor and the buttons would overflow, overlapping the
+       volume column next to it. Only the Scrubber below has anywhere left to give (its own track is
+       separately flex-1), so it does. -->
+  <div class="flex min-w-[176px] flex-col items-center justify-center gap-1 px-4">
     <!-- Transport Buttons -->
     <div class="flex items-center gap-2">
       <IconButton
@@ -157,15 +163,14 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     </div>
   </div>
 
-  <!-- Right: Quality badge, secondary toggles & volume. flex-1 like the left column, but with its own
-       real minimum (mute button + slider, empirically measured) rather than min-w-0 — same overlap risk
-       as the center column above otherwise. The two lower-priority controls (quality readout, Lyrics/
-       Up-next toggles — both reachable from the full Now Playing page regardless) step out of the way
-       first, before mute+volume itself, the essential control here, would otherwise get pushed
-       off-screen. Widths chosen empirically: this column plus the equally-flexible left one and the
-       transport+scrubber center are what has to fit between the sidebar and the (by-default-open) Up
-       Next/Lyrics panel, not the raw viewport width. -->
-  <div class="flex flex-1 min-w-[120px] max-w-[260px] items-center justify-end gap-3">
+  <!-- Right: Quality badge, secondary toggles & volume. The mirror 1fr column to the left one, so the
+       center column above always lands exactly centered. min-w-[120px] is its own real minimum (mute
+       button + slider, empirically measured) — same overlap risk as the center column above otherwise.
+       The two lower-priority controls (quality readout, Lyrics/Up-next toggles — both reachable from the
+       full Now Playing page regardless) step out of the way first, before mute+volume itself, the
+       essential control here, would otherwise get pushed off-screen. justify-end keeps them pinned to
+       the page's right edge; the fr column takes care of how much room they get to do that in. -->
+  <div class="flex min-w-[120px] items-center justify-end gap-3">
     {#if player.currentAudio}
       <div class="hidden xl:block">
         <QualityBadge audio={player.currentAudio} />
