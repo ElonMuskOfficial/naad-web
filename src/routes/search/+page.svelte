@@ -21,6 +21,7 @@ import {
 import { toast } from '$lib/toast.svelte';
 import Button from '$lib/ui/Button.svelte';
 import type { Album, Artist, Playlist, Track } from '$lib/types';
+import ArtistLinks from '$lib/ui/ArtistLinks.svelte';
 import Artwork from '$lib/ui/Artwork.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
@@ -306,14 +307,14 @@ function handleTopResultClick() {
                 <span class="font-mono text-2xs uppercase tracking-wider text-accent">
                   {top.type}
                 </span>
-                <h3 class="font-display text-xl sm:text-2xl text-ink font-normal leading-snug truncate">
+                <h3 class="font-display text-lg sm:text-xl text-ink font-normal leading-snug truncate">
                   {top.type === 'artist' ? top.item.name : top.item.title}
                 </h3>
                 <p class="text-xs sm:text-sm text-ink-muted truncate">
                   {#if top.type === 'track'}
-                    {top.item.artists.map((a) => a.name).join(', ')} · {top.item.album?.title ?? 'Single'}
+                    <ArtistLinks artists={top.item.artists} /> · {top.item.album?.title ?? 'Single'}
                   {:else if top.type === 'album'}
-                    {top.item.artists.map((a) => a.name).join(', ')} · {top.item.releaseDate?.slice(0, 4) ?? 'Album'}
+                    <ArtistLinks artists={top.item.artists} /> · {top.item.releaseDate?.slice(0, 4) ?? 'Album'}
                   {:else if top.type === 'artist'}
                     Artist
                   {/if}
@@ -381,9 +382,10 @@ function handleTopResultClick() {
               See all
             </button>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {#each searchResults.albums.slice(0, 6) as album (album.id)}
               <MediaCard
+                fluid
                 title={album.title}
                 subtitle={album.artists.map((a) => a.name).join(', ')}
                 image={bestImageUrl(album.images, 300)}
@@ -408,9 +410,10 @@ function handleTopResultClick() {
               See all
             </button>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {#each searchResults.artists.slice(0, 6) as artist (artist.id)}
               <MediaCard
+                fluid
                 title={artist.name}
                 subtitle="Artist"
                 image={bestImageUrl(artist.images, 300)}
@@ -435,9 +438,10 @@ function handleTopResultClick() {
               See all
             </button>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {#each searchResults.playlists.slice(0, 6) as playlist (playlist.id)}
               <MediaCard
+                fluid
                 title={playlist.title}
                 subtitle={playlist.description ?? 'Playlist'}
                 image={bestImageUrl(playlist.images, 300)}
@@ -472,9 +476,10 @@ function handleTopResultClick() {
         <h2 class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
           All Albums ({searchResults.albums.length})
         </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {#each searchResults.albums as album (album.id)}
             <MediaCard
+              fluid
               title={album.title}
               subtitle={album.artists.map((a) => a.name).join(', ')}
               image={bestImageUrl(album.images, 300)}
@@ -491,9 +496,10 @@ function handleTopResultClick() {
         <h2 class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
           All Artists ({searchResults.artists.length})
         </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {#each searchResults.artists as artist (artist.id)}
             <MediaCard
+              fluid
               title={artist.name}
               subtitle="Artist"
               image={bestImageUrl(artist.images, 300)}
@@ -510,9 +516,10 @@ function handleTopResultClick() {
         <h2 class="font-mono text-2xs uppercase tracking-wider text-ink-faint">
           All Playlists ({searchResults.playlists.length})
         </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {#each searchResults.playlists as playlist (playlist.id)}
             <MediaCard
+              fluid
               title={playlist.title}
               subtitle={playlist.description ?? 'Playlist'}
               image={bestImageUrl(playlist.images, 300)}

@@ -2,7 +2,7 @@
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
 import { api } from '$lib/api/client';
-import { formatDurationMs, joinArtists } from '$lib/format';
+import { formatDurationMs } from '$lib/format';
 import { Play, Shuffle } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
 import {
@@ -18,6 +18,7 @@ import {
 } from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
+import ArtistLinks from '$lib/ui/ArtistLinks.svelte';
 import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
@@ -231,7 +232,7 @@ function formatRelativeTime(isoString: string): string {
   {#if activeTab === 'playlists'}
     <!-- Playlists Tab View -->
     {#if playlistsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col gap-2">
             <Skeleton class="aspect-square w-full rounded-sm" />
@@ -246,7 +247,7 @@ function formatRelativeTime(isoString: string): string {
         description="Create your first playlist to organize songs, albums, and moods in one place."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         <!-- New playlist dashed tile -->
         <button
           type="button"
@@ -261,6 +262,7 @@ function formatRelativeTime(isoString: string): string {
 
         {#each playlistsQuery.data as playlist (playlist.id)}
           <MediaCard
+            fluid
             title={playlist.title}
             subtitle={`${playlist.trackCount} ${playlist.trackCount === 1 ? 'track' : 'tracks'} · ${playlist.origin === 'user' ? 'Library' : 'JioSaavn'}`}
             image={playlist.images?.[0]?.url}
@@ -318,7 +320,7 @@ function formatRelativeTime(isoString: string): string {
   {:else if activeTab === 'albums'}
     <!-- Saved Albums Tab View -->
     {#if savedAlbumsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col gap-2">
             <Skeleton class="aspect-square w-full rounded-sm" />
@@ -333,9 +335,10 @@ function formatRelativeTime(isoString: string): string {
         description="When you find albums you love, save them to access your collection here."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each savedAlbumsQuery.data.items as item (item.album.id)}
           <MediaCard
+            fluid
             title={item.album.title}
             subtitle={item.album.artists.map((a) => a.name).join(', ')}
             image={item.album.images?.[0]?.url}
@@ -348,7 +351,7 @@ function formatRelativeTime(isoString: string): string {
   {:else if activeTab === 'artists'}
     <!-- Followed Artists Tab View -->
     {#if followedArtistsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col items-center gap-2">
             <Skeleton class="aspect-square w-full rounded-full" />
@@ -362,9 +365,10 @@ function formatRelativeTime(isoString: string): string {
         description="Follow artists to easily access their discography and stay updated with new releases."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each followedArtistsQuery.data.items as item (item.artist.id)}
           <MediaCard
+            fluid
             title={item.artist.name}
             subtitle="Artist"
             image={item.artist.images?.[0]?.url}
@@ -423,7 +427,7 @@ function formatRelativeTime(isoString: string): string {
                     {record.track.title}
                   </p>
                   <p class="truncate text-xs text-ink-muted mt-0.5">
-                    {joinArtists(record.track.artists.map((a) => a.name))}
+                    <ArtistLinks artists={record.track.artists} />
                   </p>
                 </div>
               </div>

@@ -10,19 +10,36 @@ interface Props {
   shape?: 'square' | 'circle';
   size?: number;
   rank?: number; // shows a large mono rank number for chart shelves
+  /** Fills its grid column instead of a fixed size×size box — for a CSS Grid of cards (search/library/
+   *  artist results), whose column width varies by breakpoint, rather than Shelf's horizontally-scrolling
+   *  row, where a fixed card width is what makes the scrolling meaningful in the first place. Without
+   *  this, a grid card doesn't shrink with its column at low column counts — the grid ends up wider than
+   *  its container, and the last card(s) per row get clipped. `size` still sets the artwork's own
+   *  requested resolution either way. */
+  fluid?: boolean;
   onplay?: () => void;
 }
 
-let { href, title, subtitle, image, shape = 'square', size = 148, rank, onplay }: Props = $props();
+let {
+  href,
+  title,
+  subtitle,
+  image,
+  shape = 'square',
+  size = 148,
+  rank,
+  fluid = false,
+  onplay,
+}: Props = $props();
 </script>
 
 <a
   {href}
-  class="group relative flex shrink-0 flex-col gap-2 rounded-xs p-1 -m-1 hover:bg-surface-2 transition-colors duration-[var(--duration-fast)]"
-  style:width="{size}px"
+  class="group relative flex shrink-0 flex-col gap-2 rounded-xs p-1 -m-1 hover:bg-surface-2 transition-colors duration-[var(--duration-fast)] {fluid ? 'w-full' : ''}"
+  style:width={fluid ? undefined : `${size}px`}
 >
   <div class="relative">
-    <Artwork src={image} alt="" {size} radius={shape === 'circle' ? 'full' : 'sm'} />
+    <Artwork src={image} alt="" {size} {fluid} radius={shape === 'circle' ? 'full' : 'sm'} />
     {#if onplay}
       <button
         type="button"

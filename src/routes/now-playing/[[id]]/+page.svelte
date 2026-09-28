@@ -7,6 +7,7 @@ import { formatDurationMs, joinArtists } from '$lib/format';
 import { Pause, Play, Repeat, Shuffle, SkipNext, SkipPrevious } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
 import { createAlbumQuery, createLikedContainsQuery, createTrackQuery, toggleLikeTrack } from '$lib/queries';
+import ArtistLinks from '$lib/ui/ArtistLinks.svelte';
 import Artwork from '$lib/ui/Artwork.svelte';
 import IconButton from '$lib/ui/IconButton.svelte';
 import LyricsStage from '$lib/ui/LyricsStage.svelte';
@@ -248,7 +249,11 @@ function handleClose() {
             {player.currentTrack?.title ?? 'No track playing'}
           </h1>
           <p class="text-sm text-ink-muted leading-tight truncate mt-1">
-            {player.currentTrack ? joinArtists(player.currentTrack.artists) : '—'}
+            {#if player.currentTrack}
+              <ArtistLinks artists={player.currentTrack.artists} />
+            {:else}
+              —
+            {/if}
           </p>
 
           <!-- Quality Readout. Fixed height so its row doesn't collapse (and shift the scrubber below it up)
@@ -443,7 +448,11 @@ function handleClose() {
                 {player.currentTrack?.title ?? 'No track'}
               </p>
               <p class="truncate text-2xs text-ink-muted leading-tight mt-0.5">
-                {player.currentTrack ? joinArtists(player.currentTrack.artists) : '—'}
+                {#if player.currentTrack}
+                  <ArtistLinks artists={player.currentTrack.artists} />
+                {:else}
+                  —
+                {/if}
               </p>
             </div>
           </div>
