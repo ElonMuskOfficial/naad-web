@@ -1,4 +1,4 @@
-import { toEngineUrl } from '$lib/api/client';
+import { getEffectiveApiKey, toEngineUrl } from '$lib/api/client';
 import { formatIsoWithOffset } from './math';
 
 export interface ListenContext {
@@ -102,15 +102,13 @@ export class HistoryTracker {
       'Content-Type': 'application/json',
     };
 
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const apiKey = localStorage.getItem('naad:apiKey');
-        if (apiKey) {
-          headers.Authorization = `Bearer ${apiKey}`;
-        }
-      } catch {
-        // Storage unavailable
+    try {
+      const apiKey = getEffectiveApiKey();
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
       }
+    } catch {
+      // Storage unavailable
     }
 
     if (typeof fetch !== 'undefined') {
