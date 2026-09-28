@@ -50,7 +50,12 @@ function handleInput(e: Event) {
       url.searchParams.delete('q');
     }
     replaceState(url.toString(), {});
-  }, 250);
+    // 250ms used to be here — shorter than a lot of real inter-keystroke gaps (mobile typing especially),
+    // so a mid-word pause fired a real search instead of waiting for typing to actually stop. Confirmed
+    // live: continuous typing at a 400ms/char pace fired a query on nearly every character at 250ms —
+    // and still did at exactly 400ms, since real dispatch/reactivity overhead pushes the actual gap
+    // slightly past the nominal per-char delay. 500ms gives real margin above that, confirmed live too.
+  }, 500);
 }
 
 function clearQuery() {
