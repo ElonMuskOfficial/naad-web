@@ -1,15 +1,10 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths } from './schema';
 
-export const API_KEY_STORAGE_KEY = 'naad:apiKey';
-export const ENGINE_URL_STORAGE_KEY = 'naad:engineUrl';
-
-/** Baked in at build time (Vite `VITE_*` vars), so a fresh browser with nothing in `localStorage` still
- *  works out of the box — this deployment always talks to the same engine, so there's no per-visitor secret
- *  to protect here; a per-browser override (below) still takes priority for anyone who wants to point this
- *  build at a different engine. */
+/** Baked in at build time (Vite `VITE_*` vars) — this deployment always talks to one fixed engine, so
+ *  there's no per-visitor configuration to collect. Set these in the host's build environment. */
 const BUILD_ENGINE_URL = (import.meta.env.VITE_NAAD_ENGINE_URL as string | undefined)?.trim() || null;
-const BUILD_API_KEY = (import.meta.env.VITE_NAAD_API_KEY as string | undefined)?.trim() || null;
+export const BUILD_API_KEY = (import.meta.env.VITE_NAAD_API_KEY as string | undefined)?.trim() || null;
 
 export interface ProblemDetail {
   status: number;
@@ -44,51 +39,13 @@ export function isApiError(err: unknown): err is ApiError {
   return err instanceof ApiError;
 }
 
-export function getStoredApiKey(): string | null {
-  if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(API_KEY_STORAGE_KEY);
-}
-
-export function setStoredApiKey(key: string | null): void {
-  if (typeof localStorage === 'undefined') return;
-  if (key) {
-    localStorage.setItem(API_KEY_STORAGE_KEY, key);
-  } else {
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
-  }
-}
-
-export function getStoredEngineUrl(): string | null {
-  if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(ENGINE_URL_STORAGE_KEY);
-}
-
-/** The engine URL actually in effect: a per-browser override if one was set, else the build's default. */
-export function getEffectiveEngineUrl(): string | null {
-  return getStoredEngineUrl() ?? BUILD_ENGINE_URL;
-}
-
-/** The API key actually in effect: a per-browser override if one was set, else the build's default. */
-export function getEffectiveApiKey(): string | null {
-  return getStoredApiKey() ?? BUILD_API_KEY;
-}
-
-export function setStoredEngineUrl(url: string | null): void {
-  if (typeof localStorage === 'undefined') return;
-  if (url) {
-    localStorage.setItem(ENGINE_URL_STORAGE_KEY, url);
-  } else {
-    localStorage.removeItem(ENGINE_URL_STORAGE_KEY);
-  }
-}
-
-/** Prefixes a `/v1/...` path with the effective Engine URL (or nothing, meaning same-origin). */
+/** Prefixes a `/v1/...` path with the configured Engine URL (or nothing, meaning same-origin). */
 export function toEngineUrl(path: string): string {
-  const base = (getEffectiveEngineUrl() ?? '').replace(/\/$/, '');
+  const base = (BUILD_ENGINE_URL ?? '').replace(/\/$/, '');
   return `${base}${path}`;
 }
 
-export function createAuthMiddleware(getApiKey: () => string | null = getEffectiveApiKey): Middleware {
+export function createAuthMiddleware(getApiKey: () => string | null = () => BUILD_API_KEY): Middleware {
   return {
     async onRequest({ request }) {
       const key = getApiKey();
@@ -98,13 +55,6 @@ export function createAuthMiddleware(getApiKey: () => string | null = getEffecti
       return request;
     },
     async onResponse({ response }) {
-      if (response.status === 401 && typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('naad:unauthorized'));
-        if (window.location.pathname !== '/settings') {
-          window.location.href = '/settings';
-        }
-      }
-
       if (!response.ok) {
         let problem: ProblemDetail = { status: response.status };
         const contentType = response.headers.get('content-type') ?? '';
@@ -123,9 +73,9 @@ export function createAuthMiddleware(getApiKey: () => string | null = getEffecti
   };
 }
 
-export function createApiClient(baseUrl?: string, getApiKey: () => string | null = getEffectiveApiKey) {
+export function createApiClient(baseUrl?: string, getApiKey: () => string | null = () => BUILD_API_KEY) {
   const defaultUrl = typeof window !== 'undefined' ? '/' : 'http://127.0.0.1:8080';
-  const url = baseUrl ?? getEffectiveEngineUrl() ?? defaultUrl;
+  const url = baseUrl ?? BUILD_ENGINE_URL ?? defaultUrl;
   const client = createClient<paths>({ baseUrl: url });
   client.use(createAuthMiddleware(getApiKey));
   return client;

@@ -1,4 +1,4 @@
-import { getEffectiveApiKey, toEngineUrl } from '$lib/api/client';
+import { BUILD_API_KEY, toEngineUrl } from '$lib/api/client';
 import { formatIsoWithOffset } from './math';
 
 export interface ListenContext {
@@ -101,14 +101,8 @@ export class HistoryTracker {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-
-    try {
-      const apiKey = getEffectiveApiKey();
-      if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
-      }
-    } catch {
-      // Storage unavailable
+    if (BUILD_API_KEY) {
+      headers.Authorization = `Bearer ${BUILD_API_KEY}`;
     }
 
     if (typeof fetch !== 'undefined') {
