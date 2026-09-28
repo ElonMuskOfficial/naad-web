@@ -261,6 +261,7 @@ function formatRelativeTime(isoString: string): string {
 
         {#each playlistsQuery.data as playlist (playlist.id)}
           <MediaCard
+            fluid
             title={playlist.title}
             subtitle={`${playlist.trackCount} ${playlist.trackCount === 1 ? 'track' : 'tracks'} · ${playlist.origin === 'user' ? 'Library' : 'JioSaavn'}`}
             image={playlist.images?.[0]?.url}
@@ -336,6 +337,7 @@ function formatRelativeTime(isoString: string): string {
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {#each savedAlbumsQuery.data.items as item (item.album.id)}
           <MediaCard
+            fluid
             title={item.album.title}
             subtitle={item.album.artists.map((a) => a.name).join(', ')}
             image={item.album.images?.[0]?.url}
@@ -365,6 +367,7 @@ function formatRelativeTime(isoString: string): string {
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {#each followedArtistsQuery.data.items as item (item.artist.id)}
           <MediaCard
+            fluid
             title={item.artist.name}
             subtitle="Artist"
             image={item.artist.images?.[0]?.url}

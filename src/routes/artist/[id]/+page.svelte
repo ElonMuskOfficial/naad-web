@@ -204,6 +204,7 @@ async function toggleFollow() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each artist.albums as album (album.id)}
             <MediaCard
+              fluid
               title={album.title}
               subtitle={album.releaseDate ? album.releaseDate.slice(0, 4) : 'Album'}
               image={album.images?.[0]?.url}
@@ -226,6 +227,7 @@ async function toggleFollow() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each artist.singles as single (single.id)}
             <MediaCard
+              fluid
               title={single.title}
               subtitle={single.releaseDate ? single.releaseDate.slice(0, 4) : 'Single'}
               image={single.images?.[0]?.url}
@@ -248,6 +250,7 @@ async function toggleFollow() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each artist.related.slice(0, 12) as rel (rel.id)}
             <MediaCard
+              fluid
               title={rel.name}
               subtitle="Artist"
               image={rel.images?.[0]?.url}

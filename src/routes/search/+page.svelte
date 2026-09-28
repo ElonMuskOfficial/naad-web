@@ -384,6 +384,7 @@ function handleTopResultClick() {
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {#each searchResults.albums.slice(0, 6) as album (album.id)}
               <MediaCard
+                fluid
                 title={album.title}
                 subtitle={album.artists.map((a) => a.name).join(', ')}
                 image={bestImageUrl(album.images, 300)}
@@ -411,6 +412,7 @@ function handleTopResultClick() {
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {#each searchResults.artists.slice(0, 6) as artist (artist.id)}
               <MediaCard
+                fluid
                 title={artist.name}
                 subtitle="Artist"
                 image={bestImageUrl(artist.images, 300)}
@@ -438,6 +440,7 @@ function handleTopResultClick() {
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {#each searchResults.playlists.slice(0, 6) as playlist (playlist.id)}
               <MediaCard
+                fluid
                 title={playlist.title}
                 subtitle={playlist.description ?? 'Playlist'}
                 image={bestImageUrl(playlist.images, 300)}
@@ -475,6 +478,7 @@ function handleTopResultClick() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each searchResults.albums as album (album.id)}
             <MediaCard
+              fluid
               title={album.title}
               subtitle={album.artists.map((a) => a.name).join(', ')}
               image={bestImageUrl(album.images, 300)}
@@ -494,6 +498,7 @@ function handleTopResultClick() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each searchResults.artists as artist (artist.id)}
             <MediaCard
+              fluid
               title={artist.name}
               subtitle="Artist"
               image={bestImageUrl(artist.images, 300)}
@@ -513,6 +518,7 @@ function handleTopResultClick() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {#each searchResults.playlists as playlist (playlist.id)}
             <MediaCard
+              fluid
               title={playlist.title}
               subtitle={playlist.description ?? 'Playlist'}
               image={bestImageUrl(playlist.images, 300)}
