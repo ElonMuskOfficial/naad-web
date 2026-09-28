@@ -129,7 +129,7 @@ export const COMMAND_ACTIONS: CommandAction[] = [
     id: 'play-nowplaying',
     title: 'Open Now Playing (Full Screen)',
     category: 'Playback',
-    keywords: ['lyrics', 'stage', 'cover', 'signal'],
+    keywords: ['lyrics', 'stage', 'cover'],
     perform: ({ goto, player }) =>
       goto(player.currentTrack ? `/now-playing/${player.currentTrack.id}` : '/now-playing'),
   },

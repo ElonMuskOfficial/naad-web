@@ -46,6 +46,13 @@ export class PlayerEngine {
   private listenStartTime: number | null = null;
   private listenStartIso: string = formatIsoWithOffset();
   private retryCount = 0;
+  // Bumped at the start of every playTrack() call and every preloaded-swap in next() — the single source
+  // of truth for "which track transition is the one the user actually wants right now." Rapid Next/
+  // Previous taps each kick off their own async work (a network fetch to resolve a playable URL, or an
+  // audio-graph swap) with no guarantee they settle in the order they were started; without this, whichever
+  // one happened to finish last would win and start playing, even if it was an earlier, already-superseded
+  // tap — audibly the previous track continuing to play under the newest track's already-updated details.
+  private playGeneration = 0;
 
   constructor() {
     this.readStoredSettings();
@@ -302,6 +309,7 @@ export class PlayerEngine {
   }
 
   async playTrack(track: Track, newQueue?: Track[], context?: { type: string; id: string }) {
+    const generation = ++this.playGeneration;
     this.recordCurrentListen(false);
     this.listenContext = context;
     this.retryCount = 0;
@@ -334,6 +342,11 @@ export class PlayerEngine {
         },
       });
 
+      // A newer play request (another Next/Previous tap, a fresh playTrack elsewhere) started while this
+      // fetch was in flight and is now the one that should be playing — applying this stale response would
+      // load the wrong track underneath details that already show the newer one. Bail out silently.
+      if (generation !== this.playGeneration) return;
+
       if (error || !data?.url) {
         throw error ?? new Error('No playable audio found');
       }
@@ -341,6 +354,7 @@ export class PlayerEngine {
       this.currentAudio = data;
       this.currentPlayUrl = data.url;
       await this.audioGraph.loadAndPlay(data.url, 0);
+      if (generation !== this.playGeneration) return;
 
       this.status = 'playing';
       this.listenStartTime = Date.now();
@@ -353,6 +367,7 @@ export class PlayerEngine {
       this.scheduler.queueChanged(this.queue, this.queueIndex);
       this.saveSession();
     } catch (err) {
+      if (generation !== this.playGeneration) return;
       console.warn('[PlayerEngine] playTrack resolution error:', err);
       toast.push(`Couldn't play "${track.title}"`, { tone: 'danger' });
       this.status = 'paused';
@@ -380,9 +395,12 @@ export class PlayerEngine {
     if (nextIdx >= 0 && nextIdx < this.queue.length) {
       const preloaded = this.scheduler.preloadedTrackInfo;
       if (preloaded && preloaded.index === nextIdx) {
+        const generation = ++this.playGeneration;
         // playTrack() records what it leaves; this path swaps tracks without it, so the skipped listen was lost.
         this.recordCurrentListen(false);
         await this.audioGraph.swapToPreloaded();
+        // Superseded by another tap while the swap was in flight — same reasoning as playTrack() above.
+        if (generation !== this.playGeneration) return;
         this.applyTrackTransition(preloaded.track, preloaded.audio, nextIdx);
       } else {
         await this.playIndex(nextIdx);

@@ -13,16 +13,15 @@ import LyricsStage from '$lib/ui/LyricsStage.svelte';
 import PlayingIndicator from '$lib/ui/PlayingIndicator.svelte';
 import QualityBadge from '$lib/ui/QualityBadge.svelte';
 import Scrubber from '$lib/ui/Scrubber.svelte';
-import SignalPathCard from '$lib/ui/SignalPathCard.svelte';
 import CaretDown from 'phosphor-svelte/lib/CaretDown';
 import Heart from 'phosphor-svelte/lib/Heart';
 import SpeakerHigh from 'phosphor-svelte/lib/SpeakerHigh';
 import SpeakerLow from 'phosphor-svelte/lib/SpeakerLow';
 import SpeakerSimpleX from 'phosphor-svelte/lib/SpeakerSimpleX';
 
-type NowPlayingTab = 'player' | 'lyrics' | 'queue' | 'signal';
+type NowPlayingTab = 'player' | 'lyrics' | 'queue';
 
-let activeTab = $state<NowPlayingTab>('lyrics');
+let activeTab = $state<NowPlayingTab>('player');
 let ambientPalette = $state<AmbientPalette>({
   ambient1: 'rgb(40, 38, 36)',
   ambient2: 'rgb(24, 23, 22)',
@@ -48,13 +47,6 @@ $effect(() => {
         player.playTrack(routeTrackQuery.data, [routeTrackQuery.data]);
       }
     }
-  }
-});
-
-// If viewing the Signal path tab and audio for the current track hasn't been resolved yet, resolve it
-$effect(() => {
-  if (activeTab === 'signal' && player.currentTrack && !player.currentAudio) {
-    void player.resolveAudio(player.currentTrack.id);
   }
 });
 
@@ -91,10 +83,10 @@ $effect(() => {
   }
 });
 
-// Sync tab from URL query param if present (?tab=signal, ?tab=queue, ?tab=lyrics, ?tab=player)
+// Sync tab from URL query param if present (?tab=queue, ?tab=lyrics, ?tab=player)
 $effect(() => {
   const queryTab = page.url.searchParams.get('tab') as NowPlayingTab | null;
-  if (queryTab && ['player', 'lyrics', 'queue', 'signal'].includes(queryTab)) {
+  if (queryTab && ['player', 'lyrics', 'queue'].includes(queryTab)) {
     activeTab = queryTab;
   }
 });
@@ -208,19 +200,6 @@ function handleClose() {
       >
         Up next
       </button>
-
-      <button
-        type="button"
-        onclick={() => switchTab('signal')}
-        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2"
-        class:border-accent={activeTab === 'signal'}
-        class:text-ink={activeTab === 'signal'}
-        class:border-transparent={activeTab !== 'signal'}
-        class:text-ink-muted={activeTab !== 'signal'}
-        class:hover:text-ink={activeTab !== 'signal'}
-      >
-        Signal path
-      </button>
     </nav>
 
     <!-- Right Header Action -->
@@ -272,13 +251,11 @@ function handleClose() {
             {player.currentTrack ? joinArtists(player.currentTrack.artists) : '—'}
           </p>
 
-          <!-- Quality Readout: Click switches directly to Signal path tab -->
-          <div class="mt-2 flex items-center justify-center lg:justify-start gap-2">
+          <!-- Quality Readout. Fixed height so its row doesn't collapse (and shift the scrubber below it up)
+               for the moment between tracks where currentAudio is briefly null. -->
+          <div class="mt-2 flex h-4 items-center justify-center lg:justify-start gap-2">
             {#if player.currentAudio}
-              <QualityBadge
-                audio={player.currentAudio}
-                onclick={() => switchTab('signal')}
-              />
+              <QualityBadge audio={player.currentAudio} />
             {/if}
           </div>
         </div>
@@ -386,7 +363,7 @@ function handleClose() {
         </div>
       </section>
 
-      <!-- Right Column: Tab Viewport (Lyrics Stage / Up next Queue / Signal path) -->
+      <!-- Right Column: Tab Viewport (Lyrics Stage / Up next Queue) -->
       <section
         class="flex flex-col flex-1 min-w-0 h-full overflow-hidden"
         class:max-lg:hidden={activeTab === 'player'}
@@ -450,15 +427,10 @@ function handleClose() {
                 {/each}
               </div>
             </div>
-          {:else if activeTab === 'signal'}
-            <!-- Signal Path Technical Card -->
-            <div class="h-full w-full overflow-y-auto py-4">
-              <SignalPathCard audio={player.currentAudio} />
-            </div>
           {/if}
         </div>
 
-        <!-- Mobile-only compact transport strip when inside a tab (Lyrics/Queue/Signal) -->
+        <!-- Mobile-only compact transport strip when inside a tab (Lyrics/Queue) -->
         <div class="lg:hidden flex items-center justify-between pt-3 pb-1 border-t border-border/40 shrink-0">
           <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
             <Artwork
