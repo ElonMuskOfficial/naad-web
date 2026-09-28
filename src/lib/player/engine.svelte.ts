@@ -395,13 +395,16 @@ export class PlayerEngine {
     if (nextIdx >= 0 && nextIdx < this.queue.length) {
       const preloaded = this.scheduler.preloadedTrackInfo;
       if (preloaded && preloaded.index === nextIdx) {
-        const generation = ++this.playGeneration;
+        ++this.playGeneration;
         // playTrack() records what it leaves; this path swaps tracks without it, so the skipped listen was lost.
         this.recordCurrentListen(false);
-        await this.audioGraph.swapToPreloaded();
-        // Superseded by another tap while the swap was in flight — same reasoning as playTrack() above.
-        if (generation !== this.playGeneration) return;
+        // Apply the new track's state before flipping the active audio element, not after: swapToPreloaded()
+        // makes the new element active immediately, and its DOM events (durationchange, timeupdate, playing)
+        // are routed to the engine the instant they fire, which can happen before its own play() promise
+        // resolves. Updating currentTrack/duration/etc. first means those events always land against the
+        // track they actually belong to, instead of racing a still-displayed previous track.
         this.applyTrackTransition(preloaded.track, preloaded.audio, nextIdx);
+        await this.audioGraph.swapToPreloaded();
       } else {
         await this.playIndex(nextIdx);
       }

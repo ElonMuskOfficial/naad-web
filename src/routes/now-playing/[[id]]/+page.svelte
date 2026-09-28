@@ -82,7 +82,12 @@ $effect(() => {
     return;
   }
   if (currentId && page.params.id !== currentId) {
-    loadedRouteId = currentId;
+    // Deliberately not touching loadedRouteId here: it's the "URL -> player" effect's own guard against
+    // reprocessing a route id, and goto() below is async, so page.params.id (and routeTrackId, derived
+    // from it) won't actually become currentId until it resolves. Setting loadedRouteId to currentId early
+    // made that effect see loadedRouteId out of sync with the still-stale routeTrackId in the meantime and
+    // re-trigger playback of the track we just left. Leaving it alone means only that other effect ever
+    // writes it, and it naturally catches up once the URL genuinely changes.
     const search = page.url.search;
     goto(`/now-playing/${currentId}${search}`, {
       replaceState: true,

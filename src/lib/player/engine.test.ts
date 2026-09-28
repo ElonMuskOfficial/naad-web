@@ -197,4 +197,46 @@ describe('listening history', () => {
     expect(record.mock.calls[0]![0].msPlayed).toBeGreaterThanOrEqual(5000);
     vi.restoreAllMocks();
   });
+
+  it('applies the new track state before swapping audio, so the swap never runs against stale track info', async () => {
+    const [a, b] = tracks;
+    // @ts-expect-error private members, reached for this test only
+    const { scheduler, audioGraph } = player;
+
+    player.repeat = 'off';
+    player.queue = [a!, b!];
+    player.queueIndex = 0;
+    player.currentTrack = a!;
+    player.duration = 999; // deliberately far from b's real duration below
+
+    vi.spyOn(scheduler, 'preloadedTrackInfo', 'get').mockReturnValue({
+      track: b!,
+      index: 1,
+      audio: {
+        url: 'https://cdn.example/b.mp4',
+        bitrateKbps: 320,
+        codec: 'aac',
+        mimeType: 'audio/mp4',
+        durationMs: 200_000,
+      },
+    } as never);
+    vi.spyOn(scheduler, 'prepareNextTrack').mockImplementation(async () => {});
+    vi.spyOn(scheduler, 'queueChanged').mockImplementation(() => {});
+
+    // Captures what the engine's reactive state looks like at the instant the audio graph actually
+    // performs the swap — this is the exact window where a stray DOM event (durationchange, timeupdate,
+    // playing) from the newly-active element would otherwise be attributed to the still-old track.
+    let currentTrackIdAtSwapTime: string | undefined;
+    let durationAtSwapTime: number | undefined;
+    vi.spyOn(audioGraph, 'swapToPreloaded').mockImplementation(async () => {
+      currentTrackIdAtSwapTime = player.currentTrack?.id;
+      durationAtSwapTime = player.duration;
+    });
+
+    await player.next();
+
+    expect(currentTrackIdAtSwapTime).toBe(b!.id);
+    expect(durationAtSwapTime).toBe((b!.durationMs ?? 0) / 1000);
+    vi.restoreAllMocks();
+  });
 });

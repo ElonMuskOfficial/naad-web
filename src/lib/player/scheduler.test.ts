@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Audio, Track } from '$lib/types';
 import { AudioGraph } from './audio-graph';
 import { Scheduler } from './scheduler';
@@ -92,5 +92,37 @@ describe('Scheduler: checkCrossfade album boundary logic', () => {
     // Remaining time 4s <= crossfade 6s -> triggers crossfade!
     const result = scheduler.checkCrossfade(track1, 196, 200, 6);
     expect(result).toBe(true);
+  });
+});
+
+describe('Scheduler: handleTrackEnded transition ordering', () => {
+  it('notifies onTrackTransition before swapping audio, so the swap never runs against stale track info', async () => {
+    const dummyGraph = new AudioGraph();
+    const order: string[] = [];
+    vi.spyOn(dummyGraph, 'swapToPreloaded').mockImplementation(async () => {
+      order.push('swap');
+    });
+
+    const scheduler = new Scheduler(dummyGraph, {
+      onTrackTransition: () => {
+        order.push('transition');
+      },
+    });
+
+    const track1 = createDummyTrack('trk_1');
+    const track2 = createDummyTrack('trk_2');
+    // @ts-expect-error accessing private property for unit test
+    scheduler.preloadedTrack = track2;
+    // @ts-expect-error accessing private property for unit test
+    scheduler.preloadedAudio = dummyAudio;
+    // @ts-expect-error accessing private property for unit test
+    scheduler.preloadedIndex = 1;
+
+    await scheduler.handleTrackEnded([track1, track2], 0, 'off');
+
+    // Same reasoning as PlayerEngine.next()'s preloaded-swap path: swapToPreloaded() makes the new element
+    // active immediately, and its DOM events are routed to the engine the instant they fire. The transition
+    // callback (which updates currentTrack/duration/etc.) must land before that, not after.
+    expect(order).toEqual(['transition', 'swap']);
   });
 });

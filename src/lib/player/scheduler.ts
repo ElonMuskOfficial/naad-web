@@ -208,8 +208,13 @@ export class Scheduler {
       const targetIndex = this.preloadedIndex;
 
       this.clearPreload();
-      await this.audioGraph.swapToPreloaded();
+      // Notify before swapping, not after: swapToPreloaded() makes the new element active immediately, and
+      // its DOM events (durationchange, timeupdate, playing) are routed to the engine the instant they fire,
+      // which can happen before its own play() promise resolves. The transition must already be applied by
+      // then, or those events land against the track that's still displayed instead of the one that's now
+      // actually playing. Same reasoning as PlayerEngine.next()'s preloaded-swap path.
       this.callbacks.onTrackTransition?.(targetTrack, targetAudio, targetIndex);
+      await this.audioGraph.swapToPreloaded();
       return true;
     }
 
