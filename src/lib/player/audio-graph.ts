@@ -116,15 +116,13 @@ export class AudioGraph {
       // the screen locking, a call coming in — and won't recover on its own; resumeAudioContext() below
       // handles the reactive path (next play()/loadAndPlay()/etc. call), but a track already mid-playback
       // when the interruption ends has no such call coming, so also resume proactively as soon as the
-      // context reports it's able to.
+      // context reports it's able to. Routed through resumeAudioContext() itself, rather than
+      // re-implementing its suspended/interrupted/closed branching here, so there's one place that knows
+      // how to recover a context in each state.
       ctx.addEventListener('statechange', () => {
-        if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
-          ctx.resume().catch(() => {});
-        } else if (ctx.state === 'closed' && this.audioContext === ctx) {
-          // Only if ctx is still the current context — rebuildAfterClose() replaces it with a new one,
-          // whose own 'closed' listener (once actually needed) is this same handler on that new instance.
-          this.rebuildAfterClose();
-        }
+        // Ignore a stale context's own listener once rebuildAfterClose() has already replaced it with a
+        // new one — that new context has this same handler on itself for whenever it actually needs it.
+        if (this.audioContext === ctx) this.resumeAudioContext();
       });
     } catch (err) {
       console.warn('[AudioGraph] Web Audio setup failed, falling back to element volume:', err);
@@ -134,11 +132,16 @@ export class AudioGraph {
 
   /** Rebuilds the entire graph — fresh AudioContext, fresh <audio> elements — for the one state resume()
    *  can't fix: 'closed'. Rare in practice (a locked screen produces 'interrupted' or 'suspended', not
-   *  this — confirmed via WebKit's own bug tracker, not assumed), but not impossible under OS memory
-   *  pressure. A MediaElementAudioSourceNode can only ever be created once per <audio> element for its
-   *  whole lifetime, even across different AudioContexts, so recovering needs new elements too, not just a
-   *  new context — carrying over whichever element was actually active's src/position/playing state so
-   *  the rebuild itself is inaudible. */
+   *  this — confirmed via WebKit's own bug tracker, not assumed), but not impossible: WebKit has also been
+   *  known to close a context outright under its own resource limits. A MediaElementAudioSourceNode can
+   *  only ever be created once per <audio> element for its whole lifetime, even across different
+   *  AudioContexts, so recovering needs new elements too, not just a new context.
+   *
+   *  Only the active track's src/position/playing state is carried over — that's what stops playback going
+   *  silently dead, which is the actual failure this exists to prevent. The idle slot's preloaded next
+   *  track is deliberately *not* restored: losing it just degrades the next crossfade to a gapless swap
+   *  instead of a fade (or it's simply re-preloaded upstream), which isn't worth this already-rare rebuild
+   *  carrying more state than it needs to. */
   private rebuildAfterClose() {
     if (!this.slotA || !this.slotB) return;
     const prevActiveSlot = this.activeSlot;
@@ -146,7 +149,6 @@ export class AudioGraph {
     const wasPlaying = !!prevActive && !prevActive.element.paused;
     const activeSrc = prevActive?.element.src ?? '';
     const activeTime = prevActive?.element.currentTime ?? 0;
-    const idleSrc = this.idle?.element.src ?? '';
 
     for (const slot of [this.slotA, this.slotB]) {
       slot.element.pause();
@@ -162,11 +164,6 @@ export class AudioGraph {
       this.active.element.currentTime = activeTime;
       this.setGain(this.active, this.userVolume);
       if (wasPlaying) this.active.element.play().catch(() => {});
-    }
-    if (idleSrc && this.idle) {
-      this.idle.element.src = idleSrc;
-      this.setGain(this.idle, this.userVolume);
-      this.idle.element.load();
     }
   }
 
