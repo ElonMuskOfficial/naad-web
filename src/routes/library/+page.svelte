@@ -231,7 +231,7 @@ function formatRelativeTime(isoString: string): string {
   {#if activeTab === 'playlists'}
     <!-- Playlists Tab View -->
     {#if playlistsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col gap-2">
             <Skeleton class="aspect-square w-full rounded-sm" />
@@ -246,7 +246,7 @@ function formatRelativeTime(isoString: string): string {
         description="Create your first playlist to organize songs, albums, and moods in one place."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         <!-- New playlist dashed tile -->
         <button
           type="button"
@@ -319,7 +319,7 @@ function formatRelativeTime(isoString: string): string {
   {:else if activeTab === 'albums'}
     <!-- Saved Albums Tab View -->
     {#if savedAlbumsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col gap-2">
             <Skeleton class="aspect-square w-full rounded-sm" />
@@ -334,7 +334,7 @@ function formatRelativeTime(isoString: string): string {
         description="When you find albums you love, save them to access your collection here."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each savedAlbumsQuery.data.items as item (item.album.id)}
           <MediaCard
             fluid
@@ -350,7 +350,7 @@ function formatRelativeTime(isoString: string): string {
   {:else if activeTab === 'artists'}
     <!-- Followed Artists Tab View -->
     {#if followedArtistsQuery.isPending}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each Array(6) as _}
           <div class="flex flex-col items-center gap-2">
             <Skeleton class="aspect-square w-full rounded-full" />
@@ -364,7 +364,7 @@ function formatRelativeTime(isoString: string): string {
         description="Follow artists to easily access their discography and stay updated with new releases."
       />
     {:else}
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {#each followedArtistsQuery.data.items as item (item.artist.id)}
           <MediaCard
             fluid
