@@ -277,7 +277,7 @@ function handleClose() {
 
         <!-- Typography & Hierarchy: Fraunces Display Title + IBM Plex Sans Artists -->
         <div class="w-full text-center min-w-0">
-          <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-snug break-words">
+          <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-snug truncate">
             {player.currentTrack?.title ?? 'No track playing'}
           </h1>
           <p class="text-sm text-ink-muted leading-tight truncate mt-1">

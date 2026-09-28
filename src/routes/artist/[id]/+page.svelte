@@ -128,7 +128,7 @@ async function toggleFollow() {
           alt={artist.name}
           size={200}
           radius="full"
-          class="size-full object-cover"
+          fluid
         />
       </div>
 
