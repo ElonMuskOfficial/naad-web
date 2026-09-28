@@ -345,13 +345,11 @@ async function executeMove(fromIndex: number, toIndex: number) {
       <div class="flex flex-col gap-1 w-full" aria-label="Playlist tracks">
         <!-- Table Column Headers -->
         <div
-          class="grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint border-b border-border max-sm:hidden"
-          style="grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px 48px auto"
+          class="playlist-row-grid grid items-center gap-3 px-2 pb-2 text-2xs uppercase tracking-wide text-ink-faint border-b border-border max-sm:hidden"
         >
           <span></span>
           <span class="text-right" data-numeric>#</span>
           <span>Title</span>
-          <span></span>
           <span></span>
           <span class="text-right">Time</span>
           <span class="text-right">Actions</span>
@@ -369,21 +367,27 @@ async function executeMove(fromIndex: number, toIndex: number) {
               ondragstart={(e) => handleDragStart(idx, e)}
               ondragover={(e) => handleDragOver(idx, e)}
               ondrop={(e) => handleDrop(idx, e)}
-              class="group grid items-center gap-3 rounded-xs px-2 py-2 text-sm transition-colors border-y border-transparent"
+              class="playlist-row-grid group grid items-center gap-3 rounded-xs px-2 py-2 text-sm transition-colors border-y border-transparent"
               class:bg-surface-2={isCurrent}
               class:hover:bg-surface-1={!isCurrent}
               class:opacity-40={isDragging}
               class:border-t-accent={isOver && draggedIndex !== null && draggedIndex > idx}
               class:border-b-accent={isOver && draggedIndex !== null && draggedIndex < idx}
-              style="grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px 48px auto"
             >
-              <!-- Drag Handle / Grab handle -->
+              <!-- Drag Handle: desktop-only. Native HTML5 drag-and-drop has no touch equivalent (it simply
+                   never fires on mobile browsers), so this column doesn't exist at all below sm — see
+                   .playlist-row-grid — and Actions' Move Up/Down buttons are the reorder mechanism there,
+                   since those already work on touch. Also empty for a non-editable (JioSaavn) playlist,
+                   the same way Actions already is, so it doesn't waste space showing a handle that would
+                   silently do nothing. -->
               <div
-                class="cursor-grab active:cursor-grabbing text-ink-faint group-hover:text-ink-muted flex items-center justify-center"
-                title="Drag to reorder"
-                aria-label="Reorder handle"
+                class="cursor-grab active:cursor-grabbing text-ink-faint group-hover:text-ink-muted flex items-center justify-center max-sm:hidden"
+                title={isEditablePlaylist ? 'Drag to reorder' : undefined}
+                aria-label={isEditablePlaylist ? 'Reorder handle' : undefined}
               >
-                <DotsSixVertical size={16} weight="bold" />
+                {#if isEditablePlaylist}
+                  <DotsSixVertical size={16} weight="bold" />
+                {/if}
               </div>
 
               <!-- Index or Play button -->
@@ -421,8 +425,8 @@ async function executeMove(fromIndex: number, toIndex: number) {
                 </div>
               </div>
 
-              <!-- Liked status -->
-              <div class="flex items-center justify-center">
+              <!-- Liked status: desktop-only, reclaiming its column for the title on mobile -->
+              <div class="flex items-center justify-center max-sm:hidden">
                 {#if likedIds.has(item.track.id)}
                   <Heart size={14} weight="fill" class="text-accent" />
                 {/if}
@@ -433,8 +437,9 @@ async function executeMove(fromIndex: number, toIndex: number) {
                 {formatDurationMs(item.track.durationMs)}
               </span>
 
-              <!-- Actions: Keyboard Move Up/Down + Remove Item -->
-              <div class="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100">
+              <!-- Actions: Keyboard Move Up/Down + Remove Item. Full opacity on mobile since it's the
+                   reorder mechanism there now (see the drag handle above), not just a hover affordance. -->
+              <div class="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 max-sm:opacity-100">
                 {#if isEditablePlaylist}
                 <button
                   type="button"
@@ -474,3 +479,18 @@ async function executeMove(fromIndex: number, toIndex: number) {
     {/if}
   {/if}
 </div>
+
+<style>
+  /* Header and row share one template so columns line up — see TrackTable for the same pattern. Column
+     count itself changes at sm (not just widths): drag/liked/duration don't exist below sm rather than
+     existing at zero width, so the count here must always match how many cells actually render — see the
+     max-sm:hidden columns above. */
+  .playlist-row-grid {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+  }
+  @media (min-width: 640px) {
+    .playlist-row-grid {
+      grid-template-columns: 24px 28px minmax(0, 1fr) 20px 48px auto;
+    }
+  }
+</style>

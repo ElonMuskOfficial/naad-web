@@ -1,6 +1,7 @@
 <script lang="ts">
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
+import { bestImageUrl } from '$lib/art';
 import {
   createArtistQuery,
   createFollowedArtistsQuery,
@@ -123,7 +124,7 @@ async function toggleFollow() {
     <header class="flex flex-col sm:flex-row items-center sm:items-end gap-6 pb-6 border-b border-border">
       <div class="relative size-40 sm:size-48 shrink-0 rounded-full overflow-hidden bg-surface-2 border border-border shadow-xs">
         <Artwork
-          src={artist.images?.[0]?.url}
+          src={bestImageUrl(artist.images, 400)}
           alt={artist.name}
           size={200}
           radius="full"
@@ -133,7 +134,7 @@ async function toggleFollow() {
 
       <div class="flex flex-col items-center sm:items-start min-w-0 flex-1 text-center sm:text-left">
         <span class="font-mono text-2xs uppercase tracking-wider text-ink-faint">Artist</span>
-        <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl text-ink font-normal leading-tight mt-1 mb-4 truncate max-w-full">
+        <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-tight mt-1 mb-4 break-words">
           {artist.name}
         </h1>
 
