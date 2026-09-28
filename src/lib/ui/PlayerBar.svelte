@@ -38,8 +38,9 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     aria-hidden="true"
   ></div>
 
-  <!-- Left: Artwork & Track info -->
-  <div class="flex w-[260px] shrink-0 items-center gap-3">
+  <!-- Left: Artwork & Track info. flex-1/min-w-0 (not a fixed width) so it actually shrinks under
+       pressure — the title/artist beneath are already truncate, so they have somewhere to give. -->
+  <div class="flex flex-1 min-w-0 max-w-[260px] items-center gap-3">
     {#if player.currentTrack}
       <a
         href={`/now-playing/${player.currentTrack.id}`}
@@ -84,8 +85,11 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     {/if}
   </div>
 
-  <!-- Center: Transport controls & Scrubber -->
-  <div class="flex flex-1 max-w-xl flex-col items-center justify-center gap-1 px-4">
+  <!-- Center: Transport controls & Scrubber. min-w-[176px] is the transport row's own real minimum (5
+       icon buttons + their gaps, empirically measured) — a plain min-w-0 let this column shrink past that
+       floor and the buttons overflowed their box, overlapping the volume column next to it. Only the
+       Scrubber below has anywhere left to give (its own track is separately flex-1), so it does. -->
+  <div class="flex flex-1 min-w-[176px] max-w-xl flex-col items-center justify-center gap-1 px-4">
     <!-- Transport Buttons -->
     <div class="flex items-center gap-2">
       <IconButton
@@ -153,13 +157,22 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     </div>
   </div>
 
-  <!-- Right: Quality badge, secondary toggles & volume -->
-  <div class="flex w-[260px] shrink-0 items-center justify-end gap-3">
+  <!-- Right: Quality badge, secondary toggles & volume. flex-1 like the left column, but with its own
+       real minimum (mute button + slider, empirically measured) rather than min-w-0 — same overlap risk
+       as the center column above otherwise. The two lower-priority controls (quality readout, Lyrics/
+       Up-next toggles — both reachable from the full Now Playing page regardless) step out of the way
+       first, before mute+volume itself, the essential control here, would otherwise get pushed
+       off-screen. Widths chosen empirically: this column plus the equally-flexible left one and the
+       transport+scrubber center are what has to fit between the sidebar and the (by-default-open) Up
+       Next/Lyrics panel, not the raw viewport width. -->
+  <div class="flex flex-1 min-w-[120px] max-w-[260px] items-center justify-end gap-3">
     {#if player.currentAudio}
-      <QualityBadge audio={player.currentAudio} />
+      <div class="hidden xl:block">
+        <QualityBadge audio={player.currentAudio} />
+      </div>
     {/if}
 
-    <div class="flex items-center gap-1">
+    <div class="hidden lg:flex items-center gap-1">
       <IconButton
         label="Lyrics"
         size="sm"
@@ -180,7 +193,7 @@ function toggleTab(tab: 'queue' | 'lyrics') {
     </div>
 
     <!-- Volume Control -->
-    <div class="flex items-center gap-1.5 pl-1">
+    <div class="flex items-center gap-1.5 pl-1 shrink-0">
       <button
         type="button"
         onclick={() => player.toggleMute()}
