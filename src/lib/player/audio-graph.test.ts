@@ -273,6 +273,27 @@ describe('AudioGraph crossfade — bookkeeping across every completion trigger',
     expect(elB!.paused).toBe(false);
     expect(elB!.volume).toBeCloseTo(0.85);
   });
+
+  it('calls onComplete before the fallback swap flips the active slot, not after', async () => {
+    vi.stubGlobal('AudioContext', undefined);
+    const graph = await makeGraph();
+    const [elA, elB] = fakeElements;
+    elA!.src = 'song-a.mp4';
+    elB!.src = 'song-b.mp4';
+
+    let activeWhenNotified: FakeAudioElement | null | undefined;
+    graph.startCrossfade(5, () => {
+      activeWhenNotified = graph.activeElement as unknown as FakeAudioElement | null;
+    });
+
+    // onComplete must have already fired, synchronously, before the slot flips.
+    expect(activeWhenNotified).toBe(elA);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(graph.activeElement).toBe(elB);
+  });
 });
 
 describe('AudioGraph — iOS AudioContext interrupted/closed recovery', () => {

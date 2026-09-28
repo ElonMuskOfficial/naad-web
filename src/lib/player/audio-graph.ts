@@ -372,7 +372,12 @@ export class AudioGraph {
       !this.audioContext ||
       crossfadeSeconds <= 0
     ) {
-      this.swapToPreloaded().then(onComplete);
+      // Same reasoning as PlayerEngine.next()'s preloaded-swap path: swapToPreloaded() makes the new
+      // element active immediately, and its DOM events are routed to the caller the instant they fire,
+      // which can happen before its own play() promise resolves. onComplete (which applies the transition)
+      // must run first, not chained after the swap.
+      onComplete();
+      void this.swapToPreloaded();
       return;
     }
 
