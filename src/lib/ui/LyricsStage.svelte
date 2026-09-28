@@ -92,15 +92,12 @@ function handleScroll() {
           onclick={() => onseek?.(line.timeMs / 1000)}
           class="w-full max-w-full text-left font-sans transition-colors duration-200 leading-snug cursor-pointer focus-visible:outline-none select-none break-words"
           class:text-ink={isActive}
-          class:font-semibold={isActive}
           class:text-ink-muted={isPast}
           class:text-ink-faint={!isActive && !isPast}
           class:hover:text-ink={!isActive}
           class:text-base={size === 'sm'}
-          class:text-lg={size === 'md' && !isActive}
-          class:sm:text-xl={size === 'md' && !isActive}
-          class:text-xl={size === 'md' && isActive}
-          class:sm:text-2xl={size === 'md' && isActive}
+          class:text-lg={size === 'md'}
+          class:sm:text-xl={size === 'md'}
         >
           {line.text}
         </button>

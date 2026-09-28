@@ -54,14 +54,26 @@ function onPointerUp() {
     <span class="font-mono text-2xs text-ink-muted w-9 text-right" data-numeric>{formatTime(localValue)}</span>
   {/if}
   <div class="relative flex-1 group" class:h-1={size === 'sm'} class:h-1.5={size === 'lg'}>
-    <div class="absolute inset-0 rounded-full bg-surface-3" aria-hidden="true"></div>
-    <div class="absolute inset-y-0 left-0 rounded-full bg-ink-faint" style:width="{pct(buffered)}%" aria-hidden="true"></div>
-    <div
-      class="absolute inset-y-0 left-0 rounded-full bg-ink-muted transition-colors group-hover:bg-ink"
-      class:bg-ink={dragging}
-      style:width="{pct(localValue)}%"
-      aria-hidden="true"
-    ></div>
+    <!-- Buffered and played are the same track's fill at two different widths, not two independent
+         pills — clipped together by one rounded-full wrapper so the visible shape is always a clean bar
+         cropped from its true start, not (at a small width, right when a track starts) a fill that's
+         nearly as wide as it is tall rendering as its own little floating rounded pip. The thumb below
+         stays outside this wrapper: unlike the fills, it's meant to visibly float past the bar's ends. -->
+    <div class="absolute inset-0 overflow-hidden rounded-full" aria-hidden="true">
+      <div class="absolute inset-0 bg-surface-3"></div>
+      <div class="absolute inset-y-0 left-0 bg-ink-faint" style:width="{pct(buffered)}%"></div>
+      <!-- Played is bg-ink at rest, not bg-ink-muted: ink-muted (60% opacity) and ink-faint (50%) used
+           right above it are the same base color a bare 10 points apart — a fine gap for text hierarchy,
+           the job they're actually designed for, but not enough to tell "buffered ahead" and "actually
+           played" apart at a glance, which is the one thing this bar exists to show clearly. Goes to the
+           accent color on hover/drag, same as the thumb it's paired with, instead of the (now redundant,
+           already-at-full-contrast) muted->ink shift this used to do on interaction. -->
+      <div
+        class="absolute inset-y-0 left-0 bg-ink transition-colors group-hover:bg-accent"
+        class:bg-accent={dragging}
+        style:width="{pct(localValue)}%"
+      ></div>
+    </div>
     <div
       class="pointer-events-none absolute top-1/2 size-2.5 -translate-y-1/2 -translate-x-1/2 rounded-full bg-accent opacity-0 transition-opacity group-hover:opacity-100"
       class:opacity-100={dragging}
