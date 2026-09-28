@@ -256,7 +256,7 @@ function handleClose() {
     <div class="flex flex-col lg:flex-row flex-1 min-w-0 h-full max-w-7xl mx-auto w-full px-4 sm:px-8 py-4 sm:py-6 gap-6 lg:gap-12">
       <!-- Left Column: Artwork, Sleeve Typography, and Full Transport Controls -->
       <section
-        class="now-playing-left flex flex-col items-center lg:items-start shrink-0 lg:w-[400px] xl:w-[420px] max-lg:max-w-md max-lg:mx-auto w-full gap-2.5 sm:gap-3 overflow-y-auto pr-3 sm:pr-4"
+        class="now-playing-left flex flex-col items-center shrink-0 lg:w-[400px] xl:w-[420px] max-lg:max-w-md max-lg:mx-auto w-full gap-2.5 sm:gap-3 overflow-y-auto pr-3 sm:pr-4"
         class:max-lg:hidden={mobileView !== 'player'}
         aria-label="Current Track Details"
       >
@@ -271,7 +271,7 @@ function handleClose() {
         </div>
 
         <!-- Typography & Hierarchy: Fraunces Display Title + IBM Plex Sans Artists -->
-        <div class="w-full text-center lg:text-left min-w-0">
+        <div class="w-full text-center min-w-0">
           <h1 class="font-display text-lg sm:text-xl text-ink font-normal leading-snug break-words">
             {player.currentTrack?.title ?? 'No track playing'}
           </h1>
@@ -285,7 +285,7 @@ function handleClose() {
 
           <!-- Quality Readout. Fixed height so its row doesn't collapse (and shift the scrubber below it up)
                for the moment between tracks where currentAudio is briefly null. -->
-          <div class="mt-2 flex h-4 items-center justify-center lg:justify-start gap-2">
+          <div class="mt-2 flex h-4 items-center justify-center gap-2">
             {#if player.currentAudio}
               <QualityBadge audio={player.currentAudio} />
             {/if}
@@ -306,7 +306,7 @@ function handleClose() {
         </div>
 
         <!-- Custom Transport SVG Controls -->
-        <div class="flex items-center justify-center lg:justify-start gap-3 w-full">
+        <div class="flex items-center justify-center gap-3 w-full">
           <IconButton
             label="Shuffle"
             size="md"
