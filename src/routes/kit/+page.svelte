@@ -109,9 +109,9 @@ function toggleLike(id: string) {
     <section class="space-y-4">
       <h2 class="text-2xs uppercase tracking-wider text-ink-faint">Quality readout — the signature element</h2>
       <div class="flex flex-wrap items-center gap-6 border-y border-border py-4">
-        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 320 }} interactive={false} />
-        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 160 }} interactive={false} />
-        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 320 }} onclick={() => toast.push('Signal path card opens here (Phase B).')} />
+        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 320 }} />
+        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 160 }} />
+        <QualityBadge audio={{ codec: 'aac', bitrateKbps: 320 }} onclick={() => toast.push('Quality badge clicked.')} />
       </div>
     </section>
 

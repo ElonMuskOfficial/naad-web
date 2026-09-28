@@ -16,7 +16,7 @@ export function formatDurationMs(ms: number | null | undefined): string {
 
 export interface QualityInfo {
   label: string; // short badge text, e.g. "AAC 320"
-  detail: string; // long form for the Signal path card
+  detail: string; // long form, used as the quality badge's accessible label
 }
 
 /** naad's whole catalog tops out at AAC 320kbps, so there is exactly one badge shape to render. */
@@ -26,11 +26,6 @@ export function describeQuality(audio: { codec: string; bitrateKbps: number }): 
     label: `${codec} ${audio.bitrateKbps}`,
     detail: `${codec}, ${audio.bitrateKbps} kbps`,
   };
-}
-
-export function formatBitrate(kbps?: number | null): string {
-  if (!kbps || kbps <= 0) return '—';
-  return `${kbps.toLocaleString()} kbps`;
 }
 
 export function formatSampleRate(hz?: number | null): string {

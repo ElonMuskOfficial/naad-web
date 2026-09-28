@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  describeQuality,
-  formatBitrate,
-  formatDurationMs,
-  formatSampleRate,
-  formatTime,
-  joinArtists,
-} from './format';
+import { describeQuality, formatDurationMs, formatSampleRate, formatTime, joinArtists } from './format';
 
 describe('format helpers', () => {
   it('formats seconds into timecode', () => {
@@ -30,11 +23,7 @@ describe('format helpers', () => {
     expect(info.detail).toBe('AAC, 320 kbps');
   });
 
-  it('formats bitrate and sample rate', () => {
-    expect(formatBitrate(320)).toBe('320 kbps');
-    expect(formatBitrate(2759)).toBe('2,759 kbps');
-    expect(formatBitrate(null)).toBe('—');
-
+  it('formats sample rate', () => {
     expect(formatSampleRate(44100)).toBe('44.1 kHz');
     expect(formatSampleRate(96000)).toBe('96 kHz');
     expect(formatSampleRate(null)).toBe('—');
