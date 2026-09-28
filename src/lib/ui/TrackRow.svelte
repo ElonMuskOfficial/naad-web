@@ -3,10 +3,11 @@ import DotsThree from 'phosphor-svelte/lib/DotsThree';
 import Heart from 'phosphor-svelte/lib/Heart';
 import { bestImageUrl } from '$lib/art';
 import { trackMenu } from '$lib/context-menu.svelte';
-import { formatDurationMs, joinArtists } from '$lib/format';
+import { formatDurationMs } from '$lib/format';
 import { Play } from '$lib/icons';
 import type { Track } from '$lib/types';
 import { player } from '$lib/player/engine.svelte';
+import ArtistLinks from './ArtistLinks.svelte';
 import Artwork from './Artwork.svelte';
 import PlayingIndicator from './PlayingIndicator.svelte';
 
@@ -35,7 +36,6 @@ let {
   onmenu,
 }: Props = $props();
 
-const artist = $derived(joinArtists(track.artists.map((a) => a.name)));
 const artwork = $derived(bestImageUrl(track.images, 120) ?? bestImageUrl(track.album?.images, 120));
 let menuButton = $state<HTMLElement>();
 let rowElement = $state<HTMLElement>();
@@ -113,7 +113,7 @@ function handleTouchEnd() {
         {track.title}
       </p>
       <p class="truncate text-xs text-ink-muted">
-        {artist}{#if track.explicit}<span
+        <ArtistLinks artists={track.artists} />{#if track.explicit}<span
             class="ml-1.5 rounded-[2px] border border-border-strong px-1 text-[10px] leading-4 align-middle"
             >E</span
           >{/if}

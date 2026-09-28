@@ -21,6 +21,7 @@ import {
 import { toast } from '$lib/toast.svelte';
 import Button from '$lib/ui/Button.svelte';
 import type { Album, Artist, Playlist, Track } from '$lib/types';
+import ArtistLinks from '$lib/ui/ArtistLinks.svelte';
 import Artwork from '$lib/ui/Artwork.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
 import MediaCard from '$lib/ui/MediaCard.svelte';
@@ -311,9 +312,9 @@ function handleTopResultClick() {
                 </h3>
                 <p class="text-xs sm:text-sm text-ink-muted truncate">
                   {#if top.type === 'track'}
-                    {top.item.artists.map((a) => a.name).join(', ')} · {top.item.album?.title ?? 'Single'}
+                    <ArtistLinks artists={top.item.artists} /> · {top.item.album?.title ?? 'Single'}
                   {:else if top.type === 'album'}
-                    {top.item.artists.map((a) => a.name).join(', ')} · {top.item.releaseDate?.slice(0, 4) ?? 'Album'}
+                    <ArtistLinks artists={top.item.artists} /> · {top.item.releaseDate?.slice(0, 4) ?? 'Album'}
                   {:else if top.type === 'artist'}
                     Artist
                   {/if}

@@ -2,7 +2,7 @@
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
 import { api } from '$lib/api/client';
-import { formatDurationMs, joinArtists } from '$lib/format';
+import { formatDurationMs } from '$lib/format';
 import { Play, Shuffle } from '$lib/icons';
 import { player } from '$lib/player/engine.svelte';
 import {
@@ -18,6 +18,7 @@ import {
 } from '$lib/queries';
 import { toast } from '$lib/toast.svelte';
 import type { Track } from '$lib/types';
+import ArtistLinks from '$lib/ui/ArtistLinks.svelte';
 import Artwork from '$lib/ui/Artwork.svelte';
 import Button from '$lib/ui/Button.svelte';
 import EmptyState from '$lib/ui/EmptyState.svelte';
@@ -426,7 +427,7 @@ function formatRelativeTime(isoString: string): string {
                     {record.track.title}
                   </p>
                   <p class="truncate text-xs text-ink-muted mt-0.5">
-                    {joinArtists(record.track.artists.map((a) => a.name))}
+                    <ArtistLinks artists={record.track.artists} />
                   </p>
                 </div>
               </div>
