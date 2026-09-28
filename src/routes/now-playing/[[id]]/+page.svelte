@@ -21,8 +21,16 @@ import SpeakerLow from 'phosphor-svelte/lib/SpeakerLow';
 import SpeakerSimpleX from 'phosphor-svelte/lib/SpeakerSimpleX';
 
 type NowPlayingTab = 'player' | 'lyrics' | 'queue';
+type PanelTab = 'lyrics' | 'queue';
 
-let activeTab = $state<NowPlayingTab>('player');
+// Two separate pieces of state, not one: on desktop the right pane (Lyrics/Up next) is *always* visible
+// alongside the left (Track) column — 'player' was never a real state for it, there's nothing to show for
+// it — while on mobile only one column shows at a time, Track included. Collapsing both into one
+// NowPlayingTab (as this used to) meant defaulting to 'player' — the Track tab, so mobile opens on the
+// track like it's supposed to — left the desktop right pane with no matching branch to render: blank,
+// with neither Lyrics nor Up next tab highlighted.
+let panelTab = $state<PanelTab>('lyrics');
+let mobileView = $state<'player' | 'panel'>('player');
 let ambientPalette = $state<AmbientPalette>({
   ambient1: 'rgb(40, 38, 36)',
   ambient2: 'rgb(24, 23, 22)',
@@ -87,8 +95,11 @@ $effect(() => {
 // Sync tab from URL query param if present (?tab=queue, ?tab=lyrics, ?tab=player)
 $effect(() => {
   const queryTab = page.url.searchParams.get('tab') as NowPlayingTab | null;
-  if (queryTab && ['player', 'lyrics', 'queue'].includes(queryTab)) {
-    activeTab = queryTab;
+  if (queryTab === 'lyrics' || queryTab === 'queue') {
+    panelTab = queryTab;
+    mobileView = 'panel';
+  } else if (queryTab === 'player') {
+    mobileView = 'player';
   }
 });
 
@@ -112,8 +123,28 @@ const currentArtwork = $derived(
   bestImageUrl(player.currentTrack?.images, 600) ?? bestImageUrl(player.currentTrack?.album?.images, 600),
 );
 
+// Lyrics/Up next are "active" on two independent axes that can disagree: panelTab alone on desktop (the
+// right pane always shows one of them, mobileView is meaningless there), but panelTab *and* mobileView on
+// mobile (only one column is ever actually visible there — without the mobileView check, switching to
+// Track wouldn't visually deselect a Lyrics/Up next tab still "active" in the background, so both would
+// show highlighted at once).
+function tabClass(desktopActive: boolean, mobileActive: boolean): string {
+  const desktop = desktopActive
+    ? 'lg:border-accent lg:text-ink'
+    : 'lg:border-transparent lg:text-ink-muted lg:hover:text-ink';
+  const mobile = mobileActive
+    ? 'max-lg:border-accent max-lg:text-ink'
+    : 'max-lg:border-transparent max-lg:text-ink-muted max-lg:hover:text-ink';
+  return `${desktop} ${mobile}`;
+}
+
 function switchTab(tab: NowPlayingTab) {
-  activeTab = tab;
+  if (tab === 'player') {
+    mobileView = 'player';
+  } else {
+    panelTab = tab;
+    mobileView = 'panel';
+  }
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
   window.history.replaceState({}, '', url.toString());
@@ -167,11 +198,11 @@ function handleClose() {
         type="button"
         onclick={() => switchTab('player')}
         class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2 lg:hidden"
-        class:border-accent={activeTab === 'player'}
-        class:text-ink={activeTab === 'player'}
-        class:border-transparent={activeTab !== 'player'}
-        class:text-ink-muted={activeTab !== 'player'}
-        class:hover:text-ink={activeTab !== 'player'}
+        class:border-accent={mobileView === 'player'}
+        class:text-ink={mobileView === 'player'}
+        class:border-transparent={mobileView !== 'player'}
+        class:text-ink-muted={mobileView !== 'player'}
+        class:hover:text-ink={mobileView !== 'player'}
       >
         Track
       </button>
@@ -179,12 +210,10 @@ function handleClose() {
       <button
         type="button"
         onclick={() => switchTab('lyrics')}
-        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2"
-        class:border-accent={activeTab === 'lyrics'}
-        class:text-ink={activeTab === 'lyrics'}
-        class:border-transparent={activeTab !== 'lyrics'}
-        class:text-ink-muted={activeTab !== 'lyrics'}
-        class:hover:text-ink={activeTab !== 'lyrics'}
+        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2 {tabClass(
+          panelTab === 'lyrics',
+          panelTab === 'lyrics' && mobileView === 'panel',
+        )}"
       >
         Lyrics
       </button>
@@ -192,12 +221,10 @@ function handleClose() {
       <button
         type="button"
         onclick={() => switchTab('queue')}
-        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2"
-        class:border-accent={activeTab === 'queue'}
-        class:text-ink={activeTab === 'queue'}
-        class:border-transparent={activeTab !== 'queue'}
-        class:text-ink-muted={activeTab !== 'queue'}
-        class:hover:text-ink={activeTab !== 'queue'}
+        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border-b-2 {tabClass(
+          panelTab === 'queue',
+          panelTab === 'queue' && mobileView === 'panel',
+        )}"
       >
         Up next
       </button>
@@ -230,7 +257,7 @@ function handleClose() {
       <!-- Left Column: Artwork, Sleeve Typography, and Full Transport Controls -->
       <section
         class="now-playing-left flex flex-col items-center lg:items-start shrink-0 lg:w-[400px] xl:w-[420px] max-lg:max-w-md max-lg:mx-auto w-full gap-2.5 sm:gap-3 overflow-y-auto pr-3 sm:pr-4"
-        class:max-lg:hidden={activeTab !== 'player'}
+        class:max-lg:hidden={mobileView !== 'player'}
         aria-label="Current Track Details"
       >
         <!-- Large Sleeve Artwork: 2-4px radius, hairline border, strictly no card drop-shadow -->
@@ -371,11 +398,11 @@ function handleClose() {
       <!-- Right Column: Tab Viewport (Lyrics Stage / Up next Queue) -->
       <section
         class="flex flex-col flex-1 min-w-0 h-full overflow-hidden"
-        class:max-lg:hidden={activeTab === 'player'}
+        class:max-lg:hidden={mobileView === 'player'}
         aria-label="Tab Content"
       >
         <div class="flex-1 min-h-0 overflow-hidden">
-          {#if activeTab === 'lyrics'}
+          {#if panelTab === 'lyrics'}
             {#if player.currentTrack || routeTrackId}
               <LyricsStage
                 trackId={(player.currentTrack?.id ?? routeTrackId)!}
@@ -387,7 +414,7 @@ function handleClose() {
                 No track currently selected.
               </div>
             {/if}
-          {:else if activeTab === 'queue'}
+          {:else if panelTab === 'queue'}
             <!-- Up next Queue List -->
             <div class="flex flex-col h-full w-full overflow-y-auto pr-2 py-4" aria-label="Playback queue">
               <p class="font-mono text-2xs uppercase tracking-wider text-ink-faint mb-3">Up next in queue</p>
