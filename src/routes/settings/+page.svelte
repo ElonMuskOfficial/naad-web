@@ -1,72 +1,11 @@
 <script lang="ts">
-import CheckCircle from 'phosphor-svelte/lib/CheckCircle';
-import Eye from 'phosphor-svelte/lib/Eye';
-import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
-import WarningCircle from 'phosphor-svelte/lib/WarningCircle';
-import {
-  API_KEY_STORAGE_KEY,
-  ENGINE_URL_STORAGE_KEY,
-  getStoredApiKey,
-  getStoredEngineUrl,
-  setStoredApiKey,
-  setStoredEngineUrl,
-} from '$lib/api/client';
 import { CROSSFADE_STORAGE_KEY, player } from '$lib/player/engine.svelte';
 import { theme } from '$lib/theme.svelte';
 import { toast } from '$lib/toast.svelte';
 import Button from '$lib/ui/Button.svelte';
 
 // Stored settings
-let apiKey = $state(getStoredApiKey() ?? '');
-let showApiKey = $state(false);
-let engineUrl = $state(getStoredEngineUrl() ?? '');
-
 let crossfade = $state(player.crossfadeSeconds);
-
-// Testing status
-let testStatus = $state<'idle' | 'testing' | 'success' | 'error'>('idle');
-let testMessage = $state<string | null>(null);
-
-function handleSaveCredentials(e: SubmitEvent) {
-  e.preventDefault();
-  setStoredApiKey(apiKey.trim() || null);
-  setStoredEngineUrl(engineUrl.trim() || null);
-  toast.push('Connection settings saved');
-}
-
-async function handleTestConnection() {
-  testStatus = 'testing';
-  testMessage = null;
-
-  const base =
-    engineUrl.trim() || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8080');
-  const headers: Record<string, string> = {};
-  if (apiKey.trim()) {
-    headers.Authorization = `Bearer ${apiKey.trim()}`;
-  }
-
-  try {
-    const res = await fetch(`${base}/v1/library/playlists`, { headers });
-    if (res.ok) {
-      testStatus = 'success';
-      testMessage = 'Connection verified successfully (HTTP 200 OK)';
-      toast.push('Engine connection verified');
-    } else if (res.status === 401) {
-      testStatus = 'error';
-      testMessage = 'Authentication failed: Invalid API key (HTTP 401)';
-      toast.push('Invalid API key', { tone: 'danger' });
-    } else {
-      testStatus = 'error';
-      testMessage = `Engine responded with HTTP ${res.status}`;
-      toast.push(`Engine returned status ${res.status}`, { tone: 'danger' });
-    }
-  } catch (err: unknown) {
-    testStatus = 'error';
-    const msg = err instanceof Error ? err.message : 'Network error';
-    testMessage = `Cannot reach engine: ${msg}. Check CORS and URL.`;
-    toast.push('Connection failed', { tone: 'danger' });
-  }
-}
 
 function handleCrossfadeChange(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -79,7 +18,7 @@ function handleClearLocalData() {
   if (
     typeof confirm !== 'undefined' &&
     !confirm(
-      'Clear the settings, API key, engine URL and saved session stored in this browser? Your library (liked songs, playlists, history) is stored on the server and is not affected.',
+      'Clear the settings and saved session stored in this browser? Your library (liked songs, playlists, history) is stored on the server and is not affected.',
     )
   ) {
     return;
@@ -87,8 +26,6 @@ function handleClearLocalData() {
   if (typeof localStorage !== 'undefined') {
     localStorage.clear();
   }
-  apiKey = '';
-  engineUrl = '';
   crossfade = 0;
   player.setCrossfade(0);
   toast.push('Local settings cleared. Your library on the server is untouched.');
@@ -107,101 +44,12 @@ function handleClearLocalData() {
       Settings
     </h1>
     <p class="mt-2 text-sm text-ink-muted max-w-xl">
-      Manage engine connectivity, audio processing and UI appearance. Playback always uses the best quality JioSaavn has (up to 320 kbps AAC).
+      Audio processing and UI appearance. Playback always uses the best quality JioSaavn has (up to 320 kbps AAC).
     </p>
   </header>
 
   <div class="space-y-8">
-    <!-- SECTION 1: Engine Connection & Authentication -->
-    <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-5">
-      <div class="border-b border-border pb-3">
-        <h2 class="text-base font-semibold text-ink">Engine & Authentication</h2>
-        <p class="text-xs text-ink-muted mt-0.5">
-          Credentials for connecting to the NAAD engine.
-        </p>
-      </div>
-
-      <form onsubmit={handleSaveCredentials} class="space-y-4">
-        <!-- API Key Input -->
-        <div>
-          <label for="api-key" class="block font-medium text-xs text-ink uppercase tracking-wide mb-1.5">
-            API Key
-          </label>
-          <div class="relative flex items-center">
-            <input
-              id="api-key"
-              type={showApiKey ? 'text' : 'password'}
-              bind:value={apiKey}
-              placeholder="Paste Bearer token (leave empty if engine has no key configured)"
-              class="w-full rounded-xs border border-border-strong bg-surface-0 px-3 py-2 pr-10 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
-            />
-            <button
-              type="button"
-              onclick={() => (showApiKey = !showApiKey)}
-              class="absolute right-2.5 text-ink-muted hover:text-ink"
-              aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
-            >
-              {#if showApiKey}
-                <EyeSlash size={16} />
-              {:else}
-                <Eye size={16} />
-              {/if}
-            </button>
-          </div>
-          <span class="mt-1 block text-[11px] text-ink-faint">
-            Stored locally in browser storage and transmitted as <code class="font-mono text-ink">Authorization: Bearer</code>.
-          </span>
-        </div>
-
-        <!-- Custom Engine URL Input -->
-        <div>
-          <label for="engine-url" class="block font-medium text-xs text-ink uppercase tracking-wide mb-1.5">
-            Engine Base URL
-          </label>
-          <input
-            id="engine-url"
-            type="url"
-            bind:value={engineUrl}
-            placeholder="Default: same-origin (reverse proxy)"
-            class="w-full rounded-xs border border-border-strong bg-surface-0 px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
-          />
-          <p class="mt-1 text-[11px] text-ink-faint leading-relaxed">
-            Leave empty for standard deployment (served through reverse proxy with no CORS).
-            If targeting a remote engine, the engine's <code class="font-mono text-ink">CORS_ORIGINS</code> must include this web origin.
-          </p>
-        </div>
-
-        <!-- Test Connection Banner -->
-        {#if testStatus === 'success'}
-          <div class="flex items-center gap-2 rounded-xs border border-accent/40 bg-accent/10 p-3 text-xs text-accent font-mono">
-            <CheckCircle size={16} weight="bold" class="shrink-0" />
-            <span>{testMessage}</span>
-          </div>
-        {:else if testStatus === 'error'}
-          <div class="flex items-center gap-2 rounded-xs border border-danger/40 bg-danger/10 p-3 text-xs text-danger font-mono">
-            <WarningCircle size={16} weight="bold" class="shrink-0" />
-            <span>{testMessage}</span>
-          </div>
-        {/if}
-
-        <div class="flex flex-wrap items-center gap-3 pt-2">
-          <Button type="submit" variant="solid" size="sm">
-            Save Settings
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={testStatus === 'testing'}
-            onclick={handleTestConnection}
-          >
-            {testStatus === 'testing' ? 'Testing...' : 'Test Connection'}
-          </Button>
-        </div>
-      </form>
-    </section>
-
-    <!-- SECTION 3: Audio Processing (Crossfade) -->
+    <!-- SECTION 1: Audio Processing (Crossfade) -->
     <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-6">
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Signal Processing</h2>
@@ -239,7 +87,7 @@ function handleClearLocalData() {
       </div>
     </section>
 
-    <!-- SECTION 4: Appearance & Interface -->
+    <!-- SECTION 2: Appearance & Interface -->
     <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-5">
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Appearance & Theme</h2>
@@ -275,7 +123,7 @@ function handleClearLocalData() {
       </div>
     </section>
 
-    <!-- SECTION 5: Maintenance & Local Storage -->
+    <!-- SECTION 3: Maintenance & Local Storage -->
     <section class="rounded-sm border border-border bg-surface-1 p-6 space-y-4">
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Storage & Cache</h2>
@@ -286,7 +134,7 @@ function handleClearLocalData() {
 
       <div class="flex flex-wrap items-center justify-between gap-4">
         <p class="text-xs text-ink-muted max-w-md">
-          Clearing local data will remove your saved API key, engine URL, audio preferences, and queue cache.
+          Clearing local data will remove your audio preferences and queue cache.
         </p>
         <Button variant="danger" size="sm" onclick={handleClearLocalData}>
           Clear Local Data

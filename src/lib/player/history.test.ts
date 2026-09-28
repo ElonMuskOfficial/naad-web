@@ -8,27 +8,13 @@ describe('HistoryTracker', () => {
     vi.useFakeTimers();
     fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
     vi.stubGlobal('fetch', fetchSpy);
-
-    const mockLocalStorage = {
-      data: {} as Record<string, string>,
-      getItem: (key: string) => mockLocalStorage.data[key] ?? null,
-      setItem: (key: string, value: string) => {
-        mockLocalStorage.data[key] = value;
-      },
-      removeItem: (key: string) => {
-        delete mockLocalStorage.data[key];
-      },
-      clear: () => {
-        mockLocalStorage.data = {};
-      },
-    };
-    vi.stubGlobal('localStorage', mockLocalStorage);
   });
 
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it('queues listen entries without sending immediately for < 20 items', () => {
@@ -84,9 +70,12 @@ describe('HistoryTracker', () => {
     tracker.destroy();
   });
 
-  it('flushes to the configured Engine URL, not the page origin, when one is set', () => {
-    localStorage.setItem('naad:engineUrl', 'https://remote-engine.example');
-    const tracker = new HistoryTracker();
+  it('flushes to the build-configured Engine URL, not the page origin, when one is set', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_NAAD_ENGINE_URL', 'https://remote-engine.example');
+    const { HistoryTracker: FreshHistoryTracker } = await import('./history');
+
+    const tracker = new FreshHistoryTracker();
     tracker.record({ trackId: 'trk_remote', msPlayed: 15000 });
     tracker.flush();
 
@@ -95,12 +84,14 @@ describe('HistoryTracker', () => {
       expect.objectContaining({ method: 'POST' }),
     );
     tracker.destroy();
-    localStorage.removeItem('naad:engineUrl');
   });
 
-  it('does not produce a double slash when the configured Engine URL ends in a slash', () => {
-    localStorage.setItem('naad:engineUrl', 'https://remote-engine.example/');
-    const tracker = new HistoryTracker();
+  it('does not produce a double slash when the configured Engine URL ends in a slash', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_NAAD_ENGINE_URL', 'https://remote-engine.example/');
+    const { HistoryTracker: FreshHistoryTracker } = await import('./history');
+
+    const tracker = new FreshHistoryTracker();
     tracker.record({ trackId: 'trk_trailing', msPlayed: 15000 });
     tracker.flush();
 
@@ -109,6 +100,5 @@ describe('HistoryTracker', () => {
       expect.objectContaining({ method: 'POST' }),
     );
     tracker.destroy();
-    localStorage.removeItem('naad:engineUrl');
   });
 });
