@@ -1,4 +1,5 @@
 <script lang="ts">
+import { BUILD_API_KEY, toEngineUrl } from '$lib/api/client';
 import { CROSSFADE_STORAGE_KEY, player } from '$lib/player/engine.svelte';
 import { theme } from '$lib/theme.svelte';
 import { toast } from '$lib/toast.svelte';
@@ -6,6 +7,7 @@ import Button from '$lib/ui/Button.svelte';
 
 // Stored settings
 let crossfade = $state(player.crossfadeSeconds);
+let clearingServerCache = $state(false);
 
 function handleCrossfadeChange(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -29,6 +31,36 @@ function handleClearLocalData() {
   crossfade = 0;
   player.setCrossfade(0);
   toast.push('Local settings cleared. Your library on the server is untouched.');
+}
+
+async function handleClearServerCache() {
+  if (
+    typeof confirm !== 'undefined' &&
+    !confirm(
+      'Clear the server-side cache (search results, track/album/artist lookups, home feed)? Your library (liked songs, playlists, history) is not affected — it lives on a separate store.',
+    )
+  ) {
+    return;
+  }
+  clearingServerCache = true;
+  try {
+    const headers: Record<string, string> = {};
+    if (BUILD_API_KEY) headers.Authorization = `Bearer ${BUILD_API_KEY}`;
+    const res = await fetch(toEngineUrl('/v1/cache'), { method: 'DELETE', headers });
+    if (res.ok) {
+      toast.push('Server cache cleared. Your library is untouched.');
+    } else if (res.status === 409) {
+      toast.push('Engine refused: cache and library share one Redis there (misconfigured).', {
+        tone: 'danger',
+      });
+    } else {
+      toast.push(`Engine returned HTTP ${res.status}`, { tone: 'danger' });
+    }
+  } catch {
+    toast.push('Could not reach the engine', { tone: 'danger' });
+  } finally {
+    clearingServerCache = false;
+  }
 }
 </script>
 
@@ -128,16 +160,27 @@ function handleClearLocalData() {
       <div class="border-b border-border pb-3">
         <h2 class="text-base font-semibold text-ink">Storage & Cache</h2>
         <p class="text-xs text-ink-muted mt-0.5">
-          Reset client preferences and clear browser cache.
+          Reset client preferences and clear cached data — this browser's, or the engine's.
         </p>
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-4">
         <p class="text-xs text-ink-muted max-w-md">
-          Clearing local data will remove your audio preferences and queue cache.
+          Clearing local data will remove your audio preferences and queue cache, in this browser only.
         </p>
         <Button variant="danger" size="sm" onclick={handleClearLocalData}>
           Clear Local Data
+        </Button>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border">
+        <p class="text-xs text-ink-muted max-w-md">
+          Clearing the server cache forces fresh search results, track/album/artist lookups and home feed —
+          useful if something looks stale. Your library (liked songs, playlists, history) is a separate
+          store and is never affected.
+        </p>
+        <Button variant="danger" size="sm" disabled={clearingServerCache} onclick={handleClearServerCache}>
+          {clearingServerCache ? 'Clearing…' : 'Clear Server Cache'}
         </Button>
       </div>
     </section>
